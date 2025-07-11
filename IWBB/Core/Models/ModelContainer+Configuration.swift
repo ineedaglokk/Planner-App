@@ -30,6 +30,12 @@ extension ModelContainer {
             Budget.self,
             Currency.self,
             
+            // Продвинутые финансовые модели
+            FinancialGoal.self,
+            BillReminder.self,
+            FinancialInsight.self,
+            BudgetCategory.self,
+            
             // Модели геймификации
             Achievement.self
         ])
@@ -63,7 +69,9 @@ extension ModelContainer {
         let schema = Schema([
             User.self, Category.self, Habit.self, HabitEntry.self,
             Task.self, Goal.self, GoalMilestone.self, GoalProgress.self,
-            Transaction.self, Budget.self, Currency.self, Achievement.self
+            Transaction.self, Budget.self, Currency.self,
+            FinancialGoal.self, BillReminder.self, FinancialInsight.self, BudgetCategory.self,
+            Achievement.self
         ])
         
         do {
@@ -91,7 +99,9 @@ extension ModelContainer {
         let schema = Schema([
             User.self, Category.self, Habit.self, HabitEntry.self,
             Task.self, Goal.self, GoalMilestone.self, GoalProgress.self,
-            Transaction.self, Budget.self, Currency.self, Achievement.self
+            Transaction.self, Budget.self, Currency.self,
+            FinancialGoal.self, BillReminder.self, FinancialInsight.self, BudgetCategory.self,
+            Achievement.self
         ])
         
         do {

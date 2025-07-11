@@ -17,6 +17,13 @@ protocol ServiceContainerProtocol {
     var categoryService: CategoryServiceProtocol { get }
     var currencyService: CurrencyServiceProtocol { get }
     
+    // Advanced Finance Services
+    var budgetingService: BudgetingServiceProtocol { get }
+    var categorizationService: CategorizationServiceProtocol { get }
+    var insightsGenerationService: InsightsGenerationServiceProtocol { get }
+    var forecastingService: ForecastingServiceProtocol { get }
+    var billReminderService: BillReminderServiceProtocol { get }
+    
     // Advanced Tasks & Goals Services
     var projectManagementService: ProjectManagementServiceProtocol { get }
     var timeBlockingService: TimeBlockingServiceProtocol { get }
@@ -50,6 +57,13 @@ final class ServiceContainer: ServiceContainerProtocol {
     private var _financeService: FinanceServiceProtocol?
     private var _categoryService: CategoryServiceProtocol?
     private var _currencyService: CurrencyServiceProtocol?
+    
+    // Advanced Finance Services
+    private var _budgetingService: BudgetingServiceProtocol?
+    private var _categorizationService: CategorizationServiceProtocol?
+    private var _insightsGenerationService: InsightsGenerationServiceProtocol?
+    private var _forecastingService: ForecastingServiceProtocol?
+    private var _billReminderService: BillReminderServiceProtocol?
     
     // Advanced Services
     private var _projectManagementService: ProjectManagementServiceProtocol?
@@ -281,6 +295,117 @@ final class ServiceContainer: ServiceContainerProtocol {
         return service
     }
     
+    // MARK: - Advanced Finance Services Access Properties
+    
+    var budgetingService: BudgetingServiceProtocol {
+        if let service = _budgetingService {
+            return service
+        }
+        
+        let service = BudgetingService(
+            dataService: dataService,
+            transactionRepository: transactionRepository,
+            categoryService: categoryService,
+            notificationService: notificationService,
+            analyticsService: nil // Placeholder for analytics service
+        )
+        _budgetingService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var categorizationService: CategorizationServiceProtocol {
+        if let service = _categorizationService {
+            return service
+        }
+        
+        let service = CategorizationService(
+            dataService: dataService,
+            transactionRepository: transactionRepository,
+            categoryService: categoryService
+        )
+        _categorizationService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var insightsGenerationService: InsightsGenerationServiceProtocol {
+        if let service = _insightsGenerationService {
+            return service
+        }
+        
+        let service = InsightsGenerationService(
+            dataService: dataService,
+            transactionRepository: transactionRepository,
+            budgetingService: budgetingService,
+            categoryService: categoryService
+        )
+        _insightsGenerationService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var forecastingService: ForecastingServiceProtocol {
+        if let service = _forecastingService {
+            return service
+        }
+        
+        let service = ForecastingService(
+            dataService: dataService,
+            transactionRepository: transactionRepository,
+            budgetingService: budgetingService
+        )
+        _forecastingService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var billReminderService: BillReminderServiceProtocol {
+        if let service = _billReminderService {
+            return service
+        }
+        
+        let service = BillReminderService(
+            dataService: dataService,
+            transactionRepository: transactionRepository,
+            notificationService: notificationService,
+            categorizationService: categorizationService
+        )
+        _billReminderService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
     // MARK: - Advanced Services Access Properties
     
     var projectManagementService: ProjectManagementServiceProtocol {
@@ -473,7 +598,28 @@ final class ServiceContainer: ServiceContainerProtocol {
             await errorHandlingService.cleanup()
         }
         
-        // Cleanup finance services
+        // Cleanup advanced finance services first
+        if let billReminderService = _billReminderService {
+            await billReminderService.cleanup()
+        }
+        
+        if let insightsGenerationService = _insightsGenerationService {
+            await insightsGenerationService.cleanup()
+        }
+        
+        if let forecastingService = _forecastingService {
+            await forecastingService.cleanup()
+        }
+        
+        if let budgetingService = _budgetingService {
+            await budgetingService.cleanup()
+        }
+        
+        if let categorizationService = _categorizationService {
+            await categorizationService.cleanup()
+        }
+        
+        // Cleanup basic finance services
         if let currencyService = _currencyService {
             await currencyService.cleanup()
         }
@@ -501,6 +647,11 @@ final class ServiceContainer: ServiceContainerProtocol {
         _financeService = nil
         _categoryService = nil
         _currencyService = nil
+        _budgetingService = nil
+        _categorizationService = nil
+        _insightsGenerationService = nil
+        _forecastingService = nil
+        _billReminderService = nil
         _projectManagementService = nil
         _timeBlockingService = nil
         _templateService = nil
@@ -529,8 +680,15 @@ final class ServiceContainer: ServiceContainerProtocol {
         // TransactionRepository (depends on data service which is already initialized)
         try await transactionRepository.initialize()
         
-        // FinanceService last (depends on all other finance services)
+        // FinanceService (depends on basic finance services)
         try await financeService.initialize()
+        
+        // Advanced Finance Services (depend on basic finance services)
+        try await categorizationService.initialize()
+        try await budgetingService.initialize()
+        try await forecastingService.initialize()
+        try await insightsGenerationService.initialize()
+        try await billReminderService.initialize()
         
         #if DEBUG
         print("Finance Services initialized successfully")
@@ -580,6 +738,11 @@ extension ServiceContainer {
                (_financeService?.isInitialized ?? false) &&
                (_categoryService?.isInitialized ?? false) &&
                (_currencyService?.isInitialized ?? false) &&
+               (_budgetingService?.isInitialized ?? false) &&
+               (_categorizationService?.isInitialized ?? false) &&
+               (_insightsGenerationService?.isInitialized ?? false) &&
+               (_forecastingService?.isInitialized ?? false) &&
+               (_billReminderService?.isInitialized ?? false) &&
                (_projectManagementService?.isInitialized ?? false) &&
                (_timeBlockingService?.isInitialized ?? false) &&
                (_templateService?.isInitialized ?? false)
@@ -598,6 +761,11 @@ extension ServiceContainer {
             "FinanceService": _financeService?.isInitialized ?? false,
             "CategoryService": _categoryService?.isInitialized ?? false,
             "CurrencyService": _currencyService?.isInitialized ?? false,
+            "BudgetingService": _budgetingService?.isInitialized ?? false,
+            "CategorizationService": _categorizationService?.isInitialized ?? false,
+            "InsightsGenerationService": _insightsGenerationService?.isInitialized ?? false,
+            "ForecastingService": _forecastingService?.isInitialized ?? false,
+            "BillReminderService": _billReminderService?.isInitialized ?? false,
             "ProjectManagementService": _projectManagementService?.isInitialized ?? false,
             "TimeBlockingService": _timeBlockingService?.isInitialized ?? false,
             "TemplateService": _templateService?.isInitialized ?? false
