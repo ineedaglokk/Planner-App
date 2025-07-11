@@ -137,6 +137,7 @@ struct Typography {
     // MARK: - Caption
     struct Caption {
         static let regular = Font.caption
+        static let medium = Font.labelMedium
         static let small = Font.captionSmall
     }
     

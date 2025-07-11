@@ -11,7 +11,6 @@ import SwiftUI
 struct FinanceTabView: View {
     
     @StateObject private var viewModel = FinanceOverviewViewModel()
-    @Environment(NavigationManager.self) private var navigationManager
     
     var body: some View {
         NavigationView {
@@ -67,8 +66,8 @@ struct FinanceTabView: View {
                         
                         // Добавить транзакцию
                         Button {
-                            navigationManager.navigate(to: .addTransaction, in: .finance)
-                        } label: {
+                            // TODO: Navigate to add transaction
+                        } label {
                             Image(systemName: "plus")
                                 .font(.title2)
                                 .foregroundColor(ColorPalette.Primary.main)
@@ -93,7 +92,6 @@ struct FinanceTabView: View {
 
 // MARK: - Quick Actions Section
 struct QuickActionsSection: View {
-    @Environment(NavigationManager.self) private var navigationManager
     
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
@@ -108,7 +106,7 @@ struct QuickActionsSection: View {
                     title: "Доход",
                     color: ColorPalette.Financial.income
                 ) {
-                    navigationManager.navigate(to: .addTransaction, in: .finance)
+                    // TODO: Navigate to add income
                 }
                 
                 QuickActionButton(
@@ -116,7 +114,7 @@ struct QuickActionsSection: View {
                     title: "Расход",
                     color: ColorPalette.Financial.expense
                 ) {
-                    navigationManager.navigate(to: .addTransaction, in: .finance)
+                    // TODO: Navigate to add expense
                 }
                 
                 QuickActionButton(
@@ -124,7 +122,7 @@ struct QuickActionsSection: View {
                     title: "Перевод",
                     color: ColorPalette.Primary.main
                 ) {
-                    navigationManager.navigate(to: .addTransaction, in: .finance)
+                    // TODO: Navigate to transfer
                 }
                 
                 QuickActionButton(
@@ -132,7 +130,7 @@ struct QuickActionsSection: View {
                     title: "Отчеты",
                     color: ColorPalette.Secondary.main
                 ) {
-                    navigationManager.navigate(to: .financialReports, in: .finance)
+                    // TODO: Navigate to reports
                 }
             }
         }
@@ -168,7 +166,6 @@ struct QuickActionButton: View {
 // MARK: - Recent Transactions Section
 struct RecentTransactionsSection: View {
     let transactions: [Transaction]
-    @Environment(NavigationManager.self) private var navigationManager
     
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
@@ -181,7 +178,7 @@ struct RecentTransactionsSection: View {
                 Spacer()
                 
                 Button("Все") {
-                    // Навигация к полному списку транзакций
+                    // TODO: Navigate to all transactions
                 }
                 .font(Typography.Body.small)
                 .foregroundColor(ColorPalette.Primary.main)
@@ -191,7 +188,7 @@ struct RecentTransactionsSection: View {
                 ForEach(transactions.prefix(5)) { transaction in
                     TransactionRowView(transaction: transaction)
                         .onTapGesture {
-                            navigationManager.navigate(to: .transactionDetail(transaction.id), in: .finance)
+                            // TODO: Navigate to transaction detail
                         }
                 }
             }
@@ -250,5 +247,4 @@ struct CategoryStatRowView: View {
 // MARK: - Preview
 #Preview {
     FinanceTabView()
-        .environment(NavigationManager.preview)
 } 

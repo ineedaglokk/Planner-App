@@ -8,140 +8,209 @@
 
 import SwiftUI
 
+// MARK: - Balance Card View
+
 struct BalanceCardView: View {
     let balance: Decimal
     let change: Decimal
     let period: FinancePeriod
     
-    @State private var animatedBalance: Double = 0
-    
     var body: some View {
-        VStack(spacing: Spacing.lg) {
+        VStack(alignment: .leading, spacing: Spacing.lg) {
             // Заголовок
             HStack {
-                Text("Общий баланс")
-                    .font(Typography.Body.medium)
+                Text("Баланс")
+                    .font(Typography.Title.medium)
                     .foregroundColor(ColorPalette.Text.secondary)
                 
                 Spacer()
                 
                 Text(period.title)
-                    .font(Typography.Caption.medium)
+                    .font(Typography.Caption.regular)
                     .foregroundColor(ColorPalette.Text.tertiary)
-                    .padding(.horizontal, Spacing.sm)
-                    .padding(.vertical, Spacing.xs)
-                    .background(ColorPalette.Background.tertiary)
-                    .cornerRadius(CornerRadius.small)
             }
             
-            // Сумма баланса
-            VStack(spacing: Spacing.xs) {
-                Text(balance.currencyFormatted)
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+            // Основная сумма
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                Text(formatCurrency(balance))
+                    .font(Typography.Display.small)
+                    .fontWeight(.bold)
                     .foregroundColor(ColorPalette.Text.primary)
-                    .onAppear {
-                        withAnimation(.easeInOut(duration: 1.0)) {
-                            animatedBalance = balance.doubleValue
-                        }
-                    }
                 
-                // Изменение за период
-                if change != 0 {
-                    HStack(spacing: Spacing.xs) {
-                        Image(systemName: change > 0 ? "arrow.up.right" : "arrow.down.right")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                        
-                        Text(change.currencyFormatted)
-                            .font(Typography.Body.small)
-                            .fontWeight(.medium)
-                        
-                        Text("за \(period.shortTitle)")
-                            .font(Typography.Caption.medium)
-                    }
-                    .foregroundColor(change > 0 ? ColorPalette.Financial.income : ColorPalette.Financial.expense)
+                // Изменение
+                HStack(spacing: Spacing.xs) {
+                    Image(systemName: change >= 0 ? "arrow.up" : "arrow.down")
+                        .font(.caption)
+                        .foregroundColor(change >= 0 ? ColorPalette.Financial.income : ColorPalette.Financial.expense)
+                    
+                    Text(formatCurrency(abs(change)))
+                        .font(Typography.Body.small)
+                        .foregroundColor(change >= 0 ? ColorPalette.Financial.income : ColorPalette.Financial.expense)
+                    
+                    Text("за период")
+                        .font(Typography.Body.small)
+                        .foregroundColor(ColorPalette.Text.tertiary)
+                }
+            }
+        }
+        .padding(Spacing.xl)
+        .background(
+            LinearGradient(
+                colors: [ColorPalette.Primary.main, ColorPalette.Primary.dark],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .cornerRadius(CornerRadius.xl)
+        .shadow(color: ColorPalette.Primary.main.opacity(0.3), radius: 8, x: 0, y: 4)
+    }
+    
+    private func formatCurrency(_ amount: Decimal) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "RUB"
+        formatter.locale = Locale(identifier: "ru_RU")
+        return formatter.string(from: NSDecimalNumber(decimal: amount)) ?? "₽0"
+    }
+}
+
+// MARK: - Transaction Row View
+
+struct TransactionRowView: View {
+    let transaction: Transaction
+    
+    var body: some View {
+        HStack(spacing: Spacing.md) {
+            // Иконка категории
+            Circle()
+                .fill(ColorPalette.Background.surface)
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Image(systemName: transaction.category?.icon ?? "dollarsign.circle")
+                        .font(.title3)
+                        .foregroundColor(ColorPalette.Primary.main)
+                )
+            
+            // Информация о транзакции
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(transaction.title)
+                    .font(Typography.Body.medium)
+                    .foregroundColor(ColorPalette.Text.primary)
+                    .lineLimit(1)
+                
+                if let description = transaction.description {
+                    Text(description)
+                        .font(Typography.Caption.regular)
+                        .foregroundColor(ColorPalette.Text.secondary)
+                        .lineLimit(1)
                 }
             }
             
-            // Быстрая статистика
-            HStack(spacing: 0) {
-                QuickStatView(
-                    title: "Доходы",
-                    amount: abs(change > 0 ? change : 0),
-                    color: ColorPalette.Financial.income
-                )
-                
-                Divider()
-                    .frame(height: 40)
-                    .foregroundColor(ColorPalette.Border.main)
-                
-                QuickStatView(
-                    title: "Расходы",
-                    amount: abs(change < 0 ? change : 0),
-                    color: ColorPalette.Financial.expense
-                )
-            }
-            .padding(.top, Spacing.md)
-        }
-        .padding(Spacing.lg)
-        .background(
-            RoundedRectangle(cornerRadius: CornerRadius.large)
-                .fill(ColorPalette.Background.secondary)
-                .shadow(color: ColorPalette.Shadow.light, radius: 8, x: 0, y: 2)
-        )
-    }
-}
-
-// MARK: - Quick Stat View
-struct QuickStatView: View {
-    let title: String
-    let amount: Decimal
-    let color: Color
-    
-    var body: some View {
-        VStack(spacing: Spacing.xs) {
-            Text(title)
-                .font(Typography.Caption.medium)
-                .foregroundColor(ColorPalette.Text.secondary)
+            Spacer()
             
-            Text(amount.currencyFormatted)
-                .font(Typography.Body.medium)
-                .fontWeight(.semibold)
-                .foregroundColor(color)
+            // Сумма
+            VStack(alignment: .trailing, spacing: Spacing.xs) {
+                Text(transaction.signedFormattedAmount)
+                    .font(Typography.Body.medium)
+                    .fontWeight(.medium)
+                    .foregroundColor(
+                        transaction.type == .income ? ColorPalette.Financial.income : ColorPalette.Financial.expense
+                    )
+                
+                Text(DateFormatter.shortDate.string(from: transaction.date))
+                    .font(Typography.Caption.regular)
+                    .foregroundColor(ColorPalette.Text.tertiary)
+            }
         }
-        .frame(maxWidth: .infinity)
+        .padding(.vertical, Spacing.sm)
     }
 }
 
-// MARK: - Extensions
-extension FinancePeriod {
-    var shortTitle: String {
+// MARK: - Supporting Types
+
+enum FinancePeriod: String, CaseIterable {
+    case week = "week"
+    case month = "month"
+    case year = "year"
+    
+    var title: String {
         switch self {
-        case .week:
-            return "неделю"
-        case .month:
-            return "месяц"
-        case .quarter:
-            return "квартал"
-        case .year:
-            return "год"
+        case .week: return "Неделя"
+        case .month: return "Месяц"
+        case .year: return "Год"
         }
+    }
+}
+
+// MARK: - Date Formatter Extension
+
+extension DateFormatter {
+    static let shortDate: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.locale = Locale(identifier: "ru_RU")
+        return formatter
+    }()
+}
+
+// MARK: - Decimal Extension
+
+extension Decimal {
+    var currencyFormatted: String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = "RUB"
+        formatter.locale = Locale(identifier: "ru_RU")
+        return formatter.string(from: NSDecimalNumber(decimal: self)) ?? "₽0"
+    }
+}
+
+// MARK: - Color Extension
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 0)
+        }
+        
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue:  Double(b) / 255,
+            opacity: Double(a) / 255
+        )
     }
 }
 
 // MARK: - Preview
+
 #Preview {
     VStack(spacing: Spacing.lg) {
         BalanceCardView(
-            balance: 125000.50,
-            change: 15000.25,
+            balance: 125000,
+            change: 5000,
             period: .month
         )
         
-        BalanceCardView(
-            balance: 85000.75,
-            change: -5000.00,
-            period: .week
+        TransactionRowView(
+            transaction: Transaction(
+                amount: 1250,
+                type: .expense,
+                title: "Продукты",
+                description: "Покупка в магазине"
+            )
         )
     }
     .padding()

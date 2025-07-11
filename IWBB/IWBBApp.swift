@@ -44,52 +44,6 @@ struct IWBBApp: App {
             .preferredColorScheme(colorScheme)
         }
         .modelContainer(for: dataModels)
-        .commands {
-            // macOS Menu Commands
-            CommandGroup(replacing: .newItem) {
-                Button("Создать привычку") {
-                    NavigationManager.shared.navigate(to: .createHabit, in: .habits)
-                }
-                .keyboardShortcut("n", modifiers: .command)
-                
-                Button("Добавить задачу") {
-                    NavigationManager.shared.navigate(to: .createTask, in: .tasks)
-                }
-                .keyboardShortcut("t", modifiers: .command)
-                
-                Button("Добавить транзакцию") {
-                    NavigationManager.shared.navigate(to: .addTransaction, in: .finance)
-                }
-                .keyboardShortcut("m", modifiers: .command)
-            }
-            
-            CommandGroup(after: .sidebar) {
-                Button("Обзор") {
-                    NavigationManager.shared.selectedTab = .dashboard
-                }
-                .keyboardShortcut("1", modifiers: .command)
-                
-                Button("Привычки") {
-                    NavigationManager.shared.selectedTab = .habits
-                }
-                .keyboardShortcut("2", modifiers: .command)
-                
-                Button("Задачи") {
-                    NavigationManager.shared.selectedTab = .tasks
-                }
-                .keyboardShortcut("3", modifiers: .command)
-                
-                Button("Финансы") {
-                    NavigationManager.shared.selectedTab = .finance
-                }
-                .keyboardShortcut("4", modifiers: .command)
-                
-                Button("Настройки") {
-                    NavigationManager.shared.selectedTab = .settings
-                }
-                .keyboardShortcut("5", modifiers: .command)
-            }
-        }
     }
     
     // MARK: - Computed Properties

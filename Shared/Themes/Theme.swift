@@ -408,6 +408,111 @@ extension View {
     }
 }
 
+// MARK: - View Modifiers
+extension View {
+    
+    // MARK: - Content Style Modifiers
+    /// Стиль контента экрана
+    func screenContentStyle() -> some View {
+        self
+            .background(ColorPalette.Background.primary)
+            .foregroundColor(ColorPalette.Text.primary)
+    }
+    
+    /// Стиль группированного контента
+    func groupedContentStyle() -> some View {
+        self
+            .background(ColorPalette.Background.grouped)
+            .foregroundColor(ColorPalette.Text.primary)
+    }
+    
+    /// Стиль карточки
+    func cardStyle() -> some View {
+        self
+            .background(ColorPalette.Background.surface)
+            .cornerRadius(CornerRadius.card)
+            .cardShadow()
+    }
+    
+    /// Стиль поверхности
+    func surfaceStyle() -> some View {
+        self
+            .background(ColorPalette.Background.surface)
+            .cornerRadius(CornerRadius.md)
+    }
+    
+    /// Адаптивное скругление
+    func adaptiveCornerRadius(_ size: AdaptiveCornerRadiusSize = .medium) -> some View {
+        let radius: CGFloat
+        switch size {
+        case .small: return self.cornerRadius(CornerRadius.sm)
+        case .medium: return self.cornerRadius(CornerRadius.md)
+        case .large: return self.cornerRadius(CornerRadius.lg)
+        }
+    }
+    
+    /// Адаптивные отступы
+    func adaptivePadding(_ base: CGFloat = 16) -> some View {
+        let padding = AdaptiveSpacing.padding(base)
+        return self.padding(padding)
+    }
+    
+    // MARK: - Shadow Modifiers
+    /// Тень для карточек
+    func cardShadow() -> some View {
+        self.shadow(
+            color: Color.black.opacity(0.1),
+            radius: 8,
+            x: 0,
+            y: 2
+        )
+    }
+    
+    /// Тень для поднятых элементов
+    func elevatedShadow() -> some View {
+        self.shadow(
+            color: Color.black.opacity(0.15),
+            radius: 12,
+            x: 0,
+            y: 4
+        )
+    }
+    
+    /// Тень для модальных окон
+    func modalShadow() -> some View {
+        self.shadow(
+            color: Color.black.opacity(0.2),
+            radius: 20,
+            x: 0,
+            y: 10
+        )
+    }
+    
+    /// Применить тень по типу
+    func applyShadow(_ type: ShadowType) -> some View {
+        switch type {
+        case .card: return AnyView(self.cardShadow())
+        case .elevated: return AnyView(self.elevatedShadow())
+        case .modal: return AnyView(self.modalShadow())
+        case .pressed: return AnyView(self.shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 1))
+        }
+    }
+}
+
+// MARK: - Supporting Types
+enum AdaptiveCornerRadiusSize {
+    case small
+    case medium
+    case large
+}
+
+enum ShadowType {
+    case card
+    case elevated
+    case modal
+    case pressed
+}
+
 // MARK: - Preview Theme
 #if DEBUG
 struct ThemePreview: View {

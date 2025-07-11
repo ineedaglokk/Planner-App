@@ -4,7 +4,7 @@ import SwiftData
 // MARK: - Transaction Model
 
 @Model
-final class Transaction: CloudKitSyncable, Timestampable, Categorizable {
+final class Transaction: CloudKitSyncable, Timestampable, Categorizable, Identifiable {
     
     // MARK: - Properties
     

@@ -151,6 +151,7 @@ struct ColorPalette {
         static let surface = Color.surface
         static let elevated = Color.surfaceElevated
         static let grouped = Color.groupedBackground
+        static let secondary = Color.surface.opacity(0.8)
     }
     
     // MARK: - Text

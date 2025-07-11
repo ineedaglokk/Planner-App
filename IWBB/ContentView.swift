@@ -11,17 +11,13 @@ import SwiftUI
 struct ContentView: View {
     
     // MARK: - Navigation State
-    @State private var navigationManager = NavigationManager.shared
     @State private var selectedTab: TabItem = .dashboard
     
     var body: some View {
         TabView(selection: $selectedTab) {
             // Dashboard Tab
-            NavigationStack(path: $navigationManager.dashboardPath) {
+            NavigationStack {
                 DashboardView()
-                    .navigationDestination(for: NavigationDestination.self) { destination in
-                        destinationView(for: destination)
-                    }
             }
             .tabItem {
                 Label(TabItem.dashboard.title, systemImage: selectedTab == .dashboard ? TabItem.dashboard.selectedIcon : TabItem.dashboard.icon)
@@ -29,11 +25,8 @@ struct ContentView: View {
             .tag(TabItem.dashboard)
             
             // Habits Tab
-            NavigationStack(path: $navigationManager.habitsPath) {
+            NavigationStack {
                 HabitsListView()
-                    .navigationDestination(for: NavigationDestination.self) { destination in
-                        destinationView(for: destination)
-                    }
             }
             .tabItem {
                 Label(TabItem.habits.title, systemImage: selectedTab == .habits ? TabItem.habits.selectedIcon : TabItem.habits.icon)
@@ -41,11 +34,8 @@ struct ContentView: View {
             .tag(TabItem.habits)
             
             // Tasks & Goals Tab
-            NavigationStack(path: $navigationManager.tasksPath) {
+            NavigationStack {
                 TasksAndGoalsView()
-                    .navigationDestination(for: NavigationDestination.self) { destination in
-                        destinationView(for: destination)
-                    }
             }
             .tabItem {
                 Label(TabItem.tasks.title, systemImage: selectedTab == .tasks ? TabItem.tasks.selectedIcon : TabItem.tasks.icon)
@@ -53,11 +43,8 @@ struct ContentView: View {
             .tag(TabItem.tasks)
             
             // Finance Tab
-            NavigationStack(path: $navigationManager.financePath) {
+            NavigationStack {
                 FinanceTabView()
-                    .navigationDestination(for: NavigationDestination.self) { destination in
-                        destinationView(for: destination)
-                    }
             }
             .tabItem {
                 Label(TabItem.finance.title, systemImage: selectedTab == .finance ? TabItem.finance.selectedIcon : TabItem.finance.icon)
@@ -65,79 +52,17 @@ struct ContentView: View {
             .tag(TabItem.finance)
             
             // Profile & Settings Tab
-            NavigationStack(path: $navigationManager.settingsPath) {
+            NavigationStack {
                 ProfileAndSettingsView()
-                    .navigationDestination(for: NavigationDestination.self) { destination in
-                        destinationView(for: destination)
-                    }
             }
             .tabItem {
                 Label(TabItem.settings.title, systemImage: selectedTab == .settings ? TabItem.settings.selectedIcon : TabItem.settings.icon)
             }
             .tag(TabItem.settings)
         }
-        .onChange(of: selectedTab) { _, newValue in
-            navigationManager.selectedTab = newValue
-        }
         .accentColor(ColorPalette.Primary.main)
-        .environment(navigationManager)
     }
-    
-    // MARK: - Navigation Destination Builder
-    @ViewBuilder
-    private func destinationView(for destination: NavigationDestination) -> some View {
-        switch destination {
-        // Habits
-        case .habitDetail(let id):
-            HabitDetailView(habitID: id)
-        case .createHabit:
-            CreateHabitView()
-        case .editHabit(let id):
-            EditHabitView(habitID: id)
-        case .habitStatistics(let id):
-            HabitStatisticsView(habitID: id)
-            
-        // Tasks
-        case .taskDetail(let id):
-            TaskDetailView(taskID: id)
-        case .createTask:
-            CreateTaskView()
-        case .editTask(let id):
-            EditTaskView(taskID: id)
-        case .projectView(let id):
-            ProjectView(projectID: id)
-            
-        // Goals
-        case .goalDetail(let id):
-            GoalDetailView(goalID: id)
-        case .createGoal:
-            CreateGoalView()
-        case .editGoal(let id):
-            EditGoalView(goalID: id)
-            
-        // Finance
-        case .transactionDetail(let id):
-            TransactionDetailView(transactionID: id)
-        case .addTransaction:
-            AddTransactionView()
-        case .editTransaction(let id):
-            EditTransactionView(transactionID: id)
-        case .budgetManagement:
-            BudgetManagementView()
-        case .financialReports:
-            FinancialReportsView()
-            
-        // Settings
-        case .profileSettings:
-            ProfileSettingsView()
-        case .notificationSettings:
-            NotificationSettingsView()
-        case .dataExport:
-            DataExportView()
-        case .about:
-            AboutView()
-        }
-    }
+
 }
 
 // MARK: - Placeholder Views (временные заглушки)
