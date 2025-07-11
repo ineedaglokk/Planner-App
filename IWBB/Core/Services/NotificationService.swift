@@ -1,6 +1,8 @@
 import Foundation
 import UserNotifications
+#if canImport(UIKit)
 import UIKit
+#endif
 
 @MainActor
 protocol NotificationServiceProtocol {
@@ -43,7 +45,9 @@ final class NotificationService: NSObject, NotificationServiceProtocol {
             )
             
             if granted {
+                #if canImport(UIKit)
                 await UIApplication.shared.registerForRemoteNotifications()
+                #endif
             }
             
             return granted

@@ -1,0 +1,1056 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.IWBB-arm64-apple-macosx15.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/sources",
+      "importPath" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/ContentView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Achievement.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/BaseProtocols.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Category.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Finance.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Goal.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Habit.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Migrations.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/ModelContainer+Configuration.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/SampleData.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Task.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/User.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/CategoryService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/CurrencyService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/DataService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ErrorHandlingService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ErrorTypes.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/FinanceService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/HabitRepository.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/HabitService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/MockServices.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/NotificationService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ServiceContainer.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ServiceProtocols.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TaskRepository.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TaskService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TransactionRepository.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/UserDefaultsService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/ViewModels/AddTransactionViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/ViewModels/FinanceOverviewViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/Views/AddTransactionView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/Views/FinanceTabView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Habits/ViewModels/HabitsListViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Habits/Views/HabitsListView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/CreateTaskViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/TaskDetailViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/TasksListViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/CreateTaskView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/QuickAddView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TaskDetailView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TaskRowView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TasksListView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/IWBBApp.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "IWBB",
+      "moduleOutputPath" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/Modules/IWBB.swiftmodule",
+      "objects" : [
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ContentView.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Achievement.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/BaseProtocols.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Category.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Finance.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Goal.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Habit.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Migrations.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ModelContainer+Configuration.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/SampleData.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Task.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/User.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CategoryService.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CurrencyService.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/DataService.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ErrorHandlingService.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ErrorTypes.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/FinanceService.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitRepository.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitService.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/MockServices.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/NotificationService.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ServiceContainer.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ServiceProtocols.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskRepository.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskService.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TransactionRepository.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/UserDefaultsService.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/AddTransactionViewModel.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/FinanceOverviewViewModel.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/AddTransactionView.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/FinanceTabView.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitsListViewModel.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitsListView.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CreateTaskViewModel.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskDetailViewModel.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TasksListViewModel.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CreateTaskView.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/QuickAddView.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskDetailView.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskRowView.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TasksListView.swift.o",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/IWBBApp.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-enable-batch-mode",
+        "-index-store-path",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-module-cache-path",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "IWBB_main",
+        "-color-diagnostics",
+        "-swift-version",
+        "5",
+        "-enable-experimental-feature",
+        "StrictConcurrency",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "iwbb"
+      ],
+      "outputFileMapPath" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ContentView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Achievement.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/BaseProtocols.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Category.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Finance.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Goal.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Habit.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Migrations.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ModelContainer+Configuration.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/SampleData.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Task.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/User.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CategoryService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CurrencyService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/DataService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ErrorHandlingService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ErrorTypes.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/FinanceService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitRepository.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/MockServices.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/NotificationService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ServiceContainer.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ServiceProtocols.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskRepository.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TransactionRepository.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/UserDefaultsService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/AddTransactionViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/FinanceOverviewViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/AddTransactionView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/FinanceTabView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitsListViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitsListView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CreateTaskViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskDetailViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TasksListViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CreateTaskView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/QuickAddView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskDetailView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskRowView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TasksListView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/IWBBApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/Modules/IWBB.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/ContentView.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Achievement.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/BaseProtocols.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Category.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Finance.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Goal.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Habit.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Migrations.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/ModelContainer+Configuration.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/SampleData.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Task.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/User.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/CategoryService.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/CurrencyService.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/DataService.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ErrorHandlingService.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ErrorTypes.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/FinanceService.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/HabitRepository.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/HabitService.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/MockServices.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/NotificationService.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ServiceContainer.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ServiceProtocols.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TaskRepository.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TaskService.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TransactionRepository.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/UserDefaultsService.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/ViewModels/AddTransactionViewModel.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/ViewModels/FinanceOverviewViewModel.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/Views/AddTransactionView.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/Views/FinanceTabView.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Habits/ViewModels/HabitsListViewModel.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Habits/Views/HabitsListView.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/CreateTaskViewModel.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/TaskDetailViewModel.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/TasksListViewModel.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/CreateTaskView.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/QuickAddView.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TaskDetailView.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TaskRowView.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TasksListView.swift",
+        "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/IWBBApp.swift"
+      ],
+      "tempsPath" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "IWBB" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "IWBB",
+      "-package-name",
+      "iwbb",
+      "-incremental",
+      "-c",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/ContentView.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Achievement.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/BaseProtocols.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Category.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Finance.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Goal.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Habit.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Migrations.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/ModelContainer+Configuration.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/SampleData.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Task.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/User.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/CategoryService.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/CurrencyService.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/DataService.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ErrorHandlingService.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ErrorTypes.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/FinanceService.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/HabitRepository.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/HabitService.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/MockServices.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/NotificationService.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ServiceContainer.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ServiceProtocols.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TaskRepository.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TaskService.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TransactionRepository.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/UserDefaultsService.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/ViewModels/AddTransactionViewModel.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/ViewModels/FinanceOverviewViewModel.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/Views/AddTransactionView.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/Views/FinanceTabView.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Habits/ViewModels/HabitsListViewModel.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Habits/Views/HabitsListView.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/CreateTaskViewModel.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/TaskDetailViewModel.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/TasksListViewModel.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/CreateTaskView.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/QuickAddView.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TaskDetailView.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TaskRowView.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TasksListView.swift",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/IWBBApp.swift",
+      "-I",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-enable-batch-mode",
+      "-index-store-path",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-module-cache-path",
+      "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "IWBB_main",
+      "-color-diagnostics",
+      "-swift-version",
+      "5",
+      "-enable-experimental-feature",
+      "StrictConcurrency",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "iwbb",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "IWBB" : [
+
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "traitConfiguration" : {
+    "enableAllTraits" : false
+  },
+  "writeCommands" : {
+    "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB-entitlement.plist" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<entitlement-plist>"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<com.apple.security.get-task-allow>"
+        }
+      ],
+      "outputFilePath" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB-entitlement.plist"
+    },
+    "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/ContentView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Achievement.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/BaseProtocols.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Category.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Finance.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Goal.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Habit.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Migrations.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/ModelContainer+Configuration.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/SampleData.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/Task.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Models/User.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/CategoryService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/CurrencyService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/DataService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ErrorHandlingService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ErrorTypes.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/FinanceService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/HabitRepository.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/HabitService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/MockServices.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/NotificationService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ServiceContainer.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/ServiceProtocols.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TaskRepository.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TaskService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/TransactionRepository.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Core/Services/UserDefaultsService.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/ViewModels/AddTransactionViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/ViewModels/FinanceOverviewViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/Views/AddTransactionView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Finance/Views/FinanceTabView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Habits/ViewModels/HabitsListViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Habits/Views/HabitsListView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/CreateTaskViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/TaskDetailViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/ViewModels/TasksListViewModel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/CreateTaskView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/QuickAddView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TaskDetailView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TaskRowView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/Features/Tasks/Views/TasksListView.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/IWBBApp.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/sources"
+    },
+    "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Achievement.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/AddTransactionView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/AddTransactionViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/BaseProtocols.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Category.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CategoryService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ContentView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CreateTaskView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CreateTaskViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/CurrencyService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/DataService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ErrorHandlingService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ErrorTypes.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Finance.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/FinanceOverviewViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/FinanceService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/FinanceTabView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Goal.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Habit.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitRepository.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitsListView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/HabitsListViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/IWBBApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Migrations.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/MockServices.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ModelContainer+Configuration.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/NotificationService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/QuickAddView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/SampleData.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ServiceContainer.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/ServiceProtocols.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/Task.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskDetailView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskDetailViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskRepository.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskRowView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TaskService.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TasksListView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TasksListViewModel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/TransactionRepository.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/User.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.build/UserDefaultsService.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/IWBB.product/Objects.LinkFileList"
+    },
+    "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/ineedaglokk/Desktop/Work/Planner App/IWBB/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}
