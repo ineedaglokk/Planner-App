@@ -109,15 +109,14 @@ struct IWBBApp: App {
     /// Модели данных для SwiftData
     private var dataModels: [any PersistentModel.Type] {
         [
-            // Основные модели будут добавлены позже
-            // User.self,
-            // Habit.self,
-            // Task.self,
-            // Transaction.self,
-            // Goal.self,
-            // Budget.self,
-            // Achievement.self,
-            // Category.self
+            User.self,
+            Habit.self,
+            Task.self,
+            Transaction.self,
+            Currency.self,
+            Goal.self,
+            Achievement.self,
+            Category.self
         ]
     }
 }

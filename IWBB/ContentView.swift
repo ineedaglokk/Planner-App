@@ -54,7 +54,7 @@ struct ContentView: View {
             
             // Finance Tab
             NavigationStack(path: $navigationManager.financePath) {
-                FinanceView()
+                FinanceTabView()
                     .navigationDestination(for: NavigationDestination.self) { destination in
                         destinationView(for: destination)
                     }
@@ -183,19 +183,7 @@ struct TasksAndGoalsView: View {
     }
 }
 
-struct FinanceView: View {
-    var body: some View {
-        VStack {
-            Text("Финансы")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            Text("Управление финансами")
-                .foregroundColor(.secondary)
-        }
-        .navigationTitle("Финансы")
-        .navigationBarTitleDisplayMode(.large)
-    }
-}
+// FinanceView теперь используется как FinanceTabView
 
 struct ProfileAndSettingsView: View {
     var body: some View {
