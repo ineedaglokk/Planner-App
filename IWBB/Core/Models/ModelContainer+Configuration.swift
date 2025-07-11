@@ -28,6 +28,7 @@ extension ModelContainer {
             // Финансовые модели
             Transaction.self,
             Budget.self,
+            Currency.self,
             
             // Модели геймификации
             Achievement.self
@@ -62,7 +63,7 @@ extension ModelContainer {
         let schema = Schema([
             User.self, Category.self, Habit.self, HabitEntry.self,
             Task.self, Goal.self, GoalMilestone.self, GoalProgress.self,
-            Transaction.self, Budget.self, Achievement.self
+            Transaction.self, Budget.self, Currency.self, Achievement.self
         ])
         
         do {
@@ -90,7 +91,7 @@ extension ModelContainer {
         let schema = Schema([
             User.self, Category.self, Habit.self, HabitEntry.self,
             Task.self, Goal.self, GoalMilestone.self, GoalProgress.self,
-            Transaction.self, Budget.self, Achievement.self
+            Transaction.self, Budget.self, Currency.self, Achievement.self
         ])
         
         do {
@@ -152,6 +153,13 @@ private extension ModelContainer {
         let categories = Category.createDefaultCategories(for: testUser)
         for category in categories {
             context.insert(category)
+        }
+        
+        // Создаем валюты
+        let currencies = Currency.createDefaultCurrencies()
+        for currency in currencies {
+            currency.user = testUser
+            context.insert(currency)
         }
         
         // Создаем тестовые привычки

@@ -9,6 +9,13 @@ protocol ServiceContainerProtocol {
     var userDefaultsService: UserDefaultsServiceProtocol { get }
     var errorHandlingService: ErrorHandlingServiceProtocol { get }
     var habitService: HabitServiceProtocol { get }
+    var taskService: TaskServiceProtocol { get }
+    
+    // Finance Services
+    var transactionRepository: TransactionRepositoryProtocol { get }
+    var financeService: FinanceServiceProtocol { get }
+    var categoryService: CategoryServiceProtocol { get }
+    var currencyService: CurrencyServiceProtocol { get }
     
     func initializeAllServices() async throws
     func cleanupAllServices() async
@@ -28,6 +35,13 @@ final class ServiceContainer: ServiceContainerProtocol {
     private var _userDefaultsService: UserDefaultsServiceProtocol?
     private var _errorHandlingService: ErrorHandlingServiceProtocol?
     private var _habitService: HabitServiceProtocol?
+    private var _taskService: TaskServiceProtocol?
+    
+    // Finance Services
+    private var _transactionRepository: TransactionRepositoryProtocol?
+    private var _financeService: FinanceServiceProtocol?
+    private var _categoryService: CategoryServiceProtocol?
+    private var _currencyService: CurrencyServiceProtocol?
     
     // Service initialization queue
     private let serviceQueue = DispatchQueue(label: "com.plannerapp.services", qos: .userInitiated)
@@ -66,14 +80,16 @@ final class ServiceContainer: ServiceContainerProtocol {
             return service
         }
         
-        let service = NotificationService()
-        _notificationService = service
-        
-        if isInitialized {
-            Task {
-                try? await service.initialize()
-            }
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--uitesting") {
+            let service = MockNotificationService()
+            _notificationService = service
+            return service
         }
+        #endif
+        
+        let service = NotificationService.shared
+        _notificationService = service
         
         return service
     }
@@ -133,6 +149,122 @@ final class ServiceContainer: ServiceContainerProtocol {
         return service
     }
     
+    var taskService: TaskServiceProtocol {
+        if let service = _taskService {
+            return service
+        }
+        
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--uitesting") {
+            let service = MockTaskService()
+            _taskService = service
+            return service
+        }
+        #endif
+        
+        let taskRepository = TaskRepository(modelContext: modelContainer.mainContext)
+        let dateParser = DateParser()
+        let service = TaskService(
+            repository: taskRepository,
+            dateParser: dateParser,
+            notificationService: notificationService
+        )
+        _taskService = service
+        
+        // Set up bidirectional dependency
+        if let notificationService = notificationService as? NotificationService {
+            notificationService.setTaskService(service)
+        }
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    // MARK: - Finance Services Access Properties
+    
+    var transactionRepository: TransactionRepositoryProtocol {
+        if let repository = _transactionRepository {
+            return repository
+        }
+        
+        let repository = TransactionRepository(
+            modelContext: modelContainer.mainContext,
+            syncService: SyncService() // Placeholder, нужно будет реализовать SyncService
+        )
+        _transactionRepository = repository
+        
+        return repository
+    }
+    
+    var financeService: FinanceServiceProtocol {
+        if let service = _financeService {
+            return service
+        }
+        
+        let service = FinanceService(
+            transactionRepository: transactionRepository,
+            categoryService: categoryService,
+            currencyService: currencyService,
+            dataService: dataService,
+            notificationService: notificationService
+        )
+        _financeService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var categoryService: CategoryServiceProtocol {
+        if let service = _categoryService {
+            return service
+        }
+        
+        let service = CategoryService(
+            dataService: dataService,
+            mlService: nil // ML service placeholder
+        )
+        _categoryService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var currencyService: CurrencyServiceProtocol {
+        if let service = _currencyService {
+            return service
+        }
+        
+        let service = CurrencyService(
+            dataService: dataService,
+            userDefaultsService: userDefaultsService,
+            notificationService: notificationService
+        )
+        _currencyService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
     // MARK: - Service Lifecycle
     
     func initializeAllServices() async throws {
@@ -165,6 +297,12 @@ final class ServiceContainer: ServiceContainerProtocol {
             // 5. HabitService после всех зависимостей
             try await habitService.initialize()
             
+            // 6. TaskService после всех зависимостей
+            try await taskService.initialize()
+            
+            // 7. Finance Services after all dependencies
+            try await initializeFinanceServices()
+            
             // Настраиваем связи между сервисами
             setupServiceDependencies()
             
@@ -191,6 +329,10 @@ final class ServiceContainer: ServiceContainerProtocol {
         #endif
         
         // Очищаем сервисы в обратном порядке инициализации
+        if let taskService = _taskService {
+            await taskService.cleanup()
+        }
+        
         if let habitService = _habitService {
             await habitService.cleanup()
         }
@@ -211,12 +353,34 @@ final class ServiceContainer: ServiceContainerProtocol {
             await errorHandlingService.cleanup()
         }
         
+        // Cleanup finance services
+        if let currencyService = _currencyService {
+            await currencyService.cleanup()
+        }
+        
+        if let categoryService = _categoryService {
+            await categoryService.cleanup()
+        }
+        
+        if let financeService = _financeService {
+            await financeService.cleanup()
+        }
+        
+        if let transactionRepository = _transactionRepository {
+            await transactionRepository.cleanup()
+        }
+        
         // Обнуляем ссылки
         _dataService = nil
         _notificationService = nil
         _userDefaultsService = nil
         _errorHandlingService = nil
         _habitService = nil
+        _taskService = nil
+        _transactionRepository = nil
+        _financeService = nil
+        _categoryService = nil
+        _currencyService = nil
         
         isInitialized = false
         
@@ -226,6 +390,29 @@ final class ServiceContainer: ServiceContainerProtocol {
     }
     
     // MARK: - Private Methods
+    
+    private func initializeFinanceServices() async throws {
+        #if DEBUG
+        print("Initializing Finance Services...")
+        #endif
+        
+        // Initialize services in correct order considering dependencies
+        // CategoryService first (no dependencies on other finance services)
+        try await categoryService.initialize()
+        
+        // CurrencyService next (no dependencies on other finance services)
+        try await currencyService.initialize()
+        
+        // TransactionRepository (depends on data service which is already initialized)
+        try await transactionRepository.initialize()
+        
+        // FinanceService last (depends on all other finance services)
+        try await financeService.initialize()
+        
+        #if DEBUG
+        print("Finance Services initialized successfully")
+        #endif
+    }
     
     private func setupServiceDependencies() {
         // Настраиваем ErrorHandlingService как презентационный делегат
@@ -250,7 +437,12 @@ extension ServiceContainer {
                (_notificationService?.isInitialized ?? false) &&
                (_userDefaultsService?.isInitialized ?? false) &&
                (_errorHandlingService?.isInitialized ?? false) &&
-               (_habitService?.isInitialized ?? false)
+               (_habitService?.isInitialized ?? false) &&
+               (_taskService?.isInitialized ?? false) &&
+               (_transactionRepository?.isInitialized ?? false) &&
+               (_financeService?.isInitialized ?? false) &&
+               (_categoryService?.isInitialized ?? false) &&
+               (_currencyService?.isInitialized ?? false)
     }
     
     /// Возвращает статус каждого сервиса
@@ -260,7 +452,12 @@ extension ServiceContainer {
             "NotificationService": _notificationService?.isInitialized ?? false,
             "UserDefaultsService": _userDefaultsService?.isInitialized ?? false,
             "ErrorHandlingService": _errorHandlingService?.isInitialized ?? false,
-            "HabitService": _habitService?.isInitialized ?? false
+            "HabitService": _habitService?.isInitialized ?? false,
+            "TaskService": _taskService?.isInitialized ?? false,
+            "TransactionRepository": _transactionRepository?.isInitialized ?? false,
+            "FinanceService": _financeService?.isInitialized ?? false,
+            "CategoryService": _categoryService?.isInitialized ?? false,
+            "CurrencyService": _currencyService?.isInitialized ?? false
         ]
     }
     
@@ -293,6 +490,36 @@ extension ServiceContainer {
             
         case is HabitServiceProtocol.Type:
             if let service = _habitService {
+                await service.cleanup()
+                try await service.initialize()
+            }
+            
+        case is TaskServiceProtocol.Type:
+            if let service = _taskService {
+                await service.cleanup()
+                try await service.initialize()
+            }
+            
+        case is TransactionRepositoryProtocol.Type:
+            if let repository = _transactionRepository {
+                await repository.cleanup()
+                try await repository.initialize()
+            }
+            
+        case is FinanceServiceProtocol.Type:
+            if let service = _financeService {
+                await service.cleanup()
+                try await service.initialize()
+            }
+            
+        case is CategoryServiceProtocol.Type:
+            if let service = _categoryService {
+                await service.cleanup()
+                try await service.initialize()
+            }
+            
+        case is CurrencyServiceProtocol.Type:
+            if let service = _currencyService {
                 await service.cleanup()
                 try await service.initialize()
             }
@@ -405,6 +632,13 @@ final class MockServiceContainer: ServiceContainer {
         _userDefaultsService = MockUserDefaultsService()
         _errorHandlingService = MockErrorHandlingService()
         _habitService = MockHabitService()
+        _taskService = MockTaskService()
+        
+        // Mock Finance Services
+        _transactionRepository = MockTransactionRepository()
+        _financeService = MockFinanceService()
+        _categoryService = MockCategoryService()
+        _currencyService = MockCurrencyService()
     }
     
     convenience init() {
@@ -549,4 +783,243 @@ private final class MockHabitService: HabitServiceProtocol {
     func cancelHabitReminders(_ habit: Habit) async throws { }
     func archiveHabit(_ habit: Habit) async throws { }
     func unarchiveHabit(_ habit: Habit) async throws { }
+}
+
+// Mock TaskService
+private final class MockTaskService: TaskServiceProtocol {
+    var isInitialized: Bool = true
+    
+    func initialize() async throws { }
+    func cleanup() async { }
+    
+    func getActiveTasks() async throws -> [Task] { return [] }
+    func getTodayTasks() async throws -> [Task] { return [] }
+    func getTomorrowTasks() async throws -> [Task] { return [] }
+    func getThisWeekTasks() async throws -> [Task] { return [] }
+    func getLaterTasks() async throws -> [Task] { return [] }
+    func getTask(by id: UUID) async throws -> Task? { return nil }
+    func searchTasks(_ searchText: String) async throws -> [Task] { return [] }
+    func getTasksByCategory(_ category: Category) async throws -> [Task] { return [] }
+    func getTasksByPriority(_ priority: Priority) async throws -> [Task] { return [] }
+    func getTasksByStatus(_ status: TaskStatus) async throws -> [Task] { return [] }
+    
+    func createTask(_ task: Task) async throws { }
+    func updateTask(_ task: Task) async throws { }
+    func deleteTask(_ task: Task) async throws { }
+    func bulkUpdateTasks(_ tasks: [Task]) async throws { }
+    func bulkDeleteTasks(_ tasks: [Task]) async throws { }
+    
+    func completeTask(_ task: Task) async throws { }
+    func uncompleteTask(_ task: Task) async throws { }
+    func startTask(_ task: Task) async throws { }
+    func pauseTask(_ task: Task) async throws { }
+    func cancelTask(_ task: Task) async throws { }
+    func updateTaskPriority(_ task: Task, priority: Priority) async throws { }
+    
+    func addSubtask(_ subtask: Task, to parent: Task) async throws { }
+    func removeSubtask(_ subtask: Task) async throws { }
+    func addTaskDependency(_ task: Task, dependsOn prerequisite: Task) async throws { }
+    func removeTaskDependency(_ task: Task, from prerequisite: Task) async throws { }
+    
+    func scheduleTaskReminder(_ task: Task) async throws { }
+    func cancelTaskReminder(_ task: Task) async throws { }
+    func scheduleTaskDeadlineNotification(_ task: Task) async throws { }
+    
+    func archiveTask(_ task: Task) async throws { }
+    func unarchiveTask(_ task: Task) async throws { }
+    func getTaskStatistics(period: StatisticsPeriod) async throws -> TaskStatistics {
+        return TaskStatistics(
+            period: period,
+            totalTasks: 0,
+            completedTasks: 0,
+            overdueTasks: 0,
+            highPriorityTasks: 0,
+            averageCompletionTime: 0,
+            productivityScore: 0.0
+        )
+    }
+    
+    func processRecurringTasks() async throws { }
+    func checkOverdueTasks() async throws { }
+    func syncTaskNotifications() async throws { }
+}
+
+// MARK: - Mock Finance Services
+
+// Mock TransactionRepository
+private final class MockTransactionRepository: TransactionRepositoryProtocol {
+    var isInitialized: Bool = true
+    
+    func initialize() async throws { }
+    func cleanup() async { }
+    
+    func fetchTransactions(from startDate: Date?, to endDate: Date?, type: TransactionType?, category: Category?) async throws -> [Transaction] { return [] }
+    func fetchTransaction(by id: UUID) async throws -> Transaction? { return nil }
+    func save(_ transaction: Transaction) async throws { }
+    func delete(_ transaction: Transaction) async throws { }
+    func batchSave(_ transactions: [Transaction]) async throws { }
+    func getMonthlyBalance(for date: Date) async throws -> FinanceBalance {
+        return FinanceBalance(income: 0, expenses: 0, period: DateInterval(start: date, duration: 86400), transactionCount: 0)
+    }
+    func getWeeklyBalance(for date: Date) async throws -> FinanceBalance {
+        return FinanceBalance(income: 0, expenses: 0, period: DateInterval(start: date, duration: 86400), transactionCount: 0)
+    }
+    func getYearlyBalance(for date: Date) async throws -> FinanceBalance {
+        return FinanceBalance(income: 0, expenses: 0, period: DateInterval(start: date, duration: 86400), transactionCount: 0)
+    }
+    func getTopCategories(for period: DateInterval, type: TransactionType) async throws -> [CategorySummary] { return [] }
+    func getTrendData(for period: DateInterval) async throws -> [BalancePoint] { return [] }
+    func searchTransactions(query: String) async throws -> [Transaction] { return [] }
+    func getRecentTransactions(limit: Int) async throws -> [Transaction] { return [] }
+    func getTransactionsByAccount(_ account: String) async throws -> [Transaction] { return [] }
+    func getRecurringTransactions() async throws -> [Transaction] { return [] }
+    func getTotalBalance() async throws -> Decimal { return 0 }
+    func getMonthlySpending(for date: Date) async throws -> Decimal { return 0 }
+    func getMonthlyIncome(for date: Date) async throws -> Decimal { return 0 }
+    func getAverageTransactionAmount(for type: TransactionType) async throws -> Decimal { return 0 }
+    func getTransactionsInCurrency(_ currency: String) async throws -> [Transaction] { return [] }
+    func convertTransactionsToBaseCurrency(_ transactions: [Transaction]) async throws -> [Transaction] { return transactions }
+}
+
+// Mock FinanceService
+private final class MockFinanceService: FinanceServiceProtocol {
+    var isInitialized: Bool = true
+    
+    func initialize() async throws { }
+    func cleanup() async { }
+    
+    func calculateBalance(for period: DateInterval) async throws -> FinanceBalance {
+        return FinanceBalance(income: 0, expenses: 0, period: period, transactionCount: 0)
+    }
+    func generateFinancialReport(for period: DateInterval) async throws -> FinancialReport {
+        return FinancialReport(
+            period: period,
+            totalIncome: 0,
+            totalExpenses: 0,
+            netIncome: 0,
+            topExpenseCategories: [],
+            topIncomeCategories: [],
+            budgetPerformance: [],
+            savingsRate: 0,
+            expenseGrowth: 0,
+            insights: [],
+            generatedAt: Date()
+        )
+    }
+    func predictFutureBalance(days: Int) async throws -> [BalancePrediction] { return [] }
+    func getSpendingTrend(for period: DateInterval) async throws -> SpendingTrend {
+        return SpendingTrend(
+            period: period,
+            dailyAverages: [:],
+            weeklyTotals: [:],
+            monthlyTotals: [:],
+            trendDirection: .stable,
+            changePercentage: 0
+        )
+    }
+    func createBudget(_ budget: Budget) async throws { }
+    func updateBudget(_ budget: Budget) async throws { }
+    func checkBudgetStatus(_ budget: Budget) async throws -> BudgetStatus { return .onTrack }
+    func getBudgetProgress(_ budget: Budget) async throws -> BudgetProgress {
+        return BudgetProgress(
+            budget: budget,
+            spent: 0,
+            remaining: budget.limit,
+            progress: 0,
+            daysRemaining: 30,
+            recommendedDailySpending: 0,
+            isOnTrack: true,
+            projectedOverrun: nil
+        )
+    }
+    func sendBudgetNotificationIfNeeded(_ budget: Budget) async throws { }
+    func getCurrencyRates() async throws -> [String: Decimal] { return [:] }
+    func convertAmount(_ amount: Decimal, from: String, to: String) async throws -> Decimal { return amount }
+    func updateExchangeRates() async throws { }
+    func getBaseCurrency() async throws -> Currency { return Currency(code: "RUB", name: "Рубль", symbol: "₽", isBase: true) }
+    func processTransaction(_ transaction: Transaction) async throws { }
+    func bulkImportTransactions(_ transactions: [Transaction]) async throws { }
+    func categorizeTransaction(_ transaction: Transaction) async throws -> Category? { return nil }
+    func detectDuplicateTransactions(_ transactions: [Transaction]) async throws -> [Transaction] { return [] }
+    func getSpendingInsights(for period: DateInterval) async throws -> [FinanceInsight] { return [] }
+    func getBudgetRecommendations() async throws -> [BudgetRecommendation] { return [] }
+    func getRecurringTransactionSuggestions() async throws -> [RecurringTransactionSuggestion] { return [] }
+}
+
+// Mock CategoryService
+private final class MockCategoryService: CategoryServiceProtocol {
+    var isInitialized: Bool = true
+    
+    func initialize() async throws { }
+    func cleanup() async { }
+    
+    func getDefaultCategories() async throws -> [Category] { return [] }
+    func createCustomCategory(_ category: Category) async throws { }
+    func updateCategory(_ category: Category) async throws { }
+    func deleteCategory(_ category: Category) async throws { }
+    func getCategoriesForType(_ type: CategoryType) async throws -> [Category] { return [] }
+    func getCategoryStats(for period: DateInterval) async throws -> [CategoryStats] { return [] }
+    func getCategoryTrends(for category: Category, period: DateInterval) async throws -> CategoryTrend {
+        return CategoryTrend(
+            category: category,
+            period: period,
+            dailyAverages: [:],
+            weeklyTotals: [:],
+            monthlyTotals: [:],
+            trendDirection: .stable,
+            changePercentage: 0,
+            projectedNextMonth: 0
+        )
+    }
+    func getTopCategories(limit: Int, type: TransactionType) async throws -> [Category] { return [] }
+    func suggestCategory(for description: String, amount: Decimal) async -> Category? { return nil }
+    func getCategorySuggestions(based on: [Transaction]) async throws -> [CategorySuggestion] { return [] }
+    func learnFromCategorization(_ transaction: Transaction, category: Category) async throws { }
+    func createSubcategory(_ subcategory: Category, parent: Category) async throws { }
+    func getCategoryHierarchy() async throws -> [CategoryNode] { return [] }
+    func getSubcategories(for parent: Category) async throws -> [Category] { return [] }
+    func exportCategories() async throws -> [CategoryExport] { return [] }
+    func importCategories(_ categories: [CategoryImport]) async throws { }
+}
+
+// Mock CurrencyService
+private final class MockCurrencyService: CurrencyServiceProtocol {
+    var isInitialized: Bool = true
+    
+    func initialize() async throws { }
+    func cleanup() async { }
+    
+    func getBaseCurrency() async throws -> Currency { return Currency(code: "RUB", name: "Рубль", symbol: "₽", isBase: true) }
+    func setBaseCurrency(_ currency: Currency) async throws { }
+    func getAllCurrencies() async throws -> [Currency] { return [] }
+    func getSupportedCurrencies() async throws -> [Currency] { return [] }
+    func addCustomCurrency(_ currency: Currency) async throws { }
+    func getAllExchangeRates() async throws -> [String: Decimal] { return [:] }
+    func getExchangeRate(from: String, to: String) async throws -> Decimal { return 1.0 }
+    func updateExchangeRates() async throws { }
+    func getLastUpdateTime() async throws -> Date? { return nil }
+    func convertAmount(_ amount: Decimal, from: String, to: String) async throws -> Decimal { return amount }
+    func convertToBaseCurrency(_ amount: Decimal, from currency: String) async throws -> Decimal { return amount }
+    func convertFromBaseCurrency(_ amount: Decimal, to currency: String) async throws -> Decimal { return amount }
+    func formatAmount(_ amount: Decimal, in currency: String) -> String { return "\(amount) \(currency)" }
+    func formatAmountWithSymbol(_ amount: Decimal, currency: String) -> String { return "\(amount) ₽" }
+    func getCurrencySymbol(for code: String) -> String? { return "₽" }
+    func getHistoricalRates(for currency: String, days: Int) async throws -> [HistoricalRate] { return [] }
+    func getCurrencyTrend(for currency: String, period: DateInterval) async throws -> CurrencyTrend {
+        return CurrencyTrend(
+            currency: currency,
+            period: period,
+            startRate: 1.0,
+            endRate: 1.0,
+            highestRate: 1.0,
+            lowestRate: 1.0,
+            averageRate: 1.0,
+            volatility: 0,
+            trendDirection: .stable,
+            changePercentage: 0
+        )
+    }
+    func subscribeToRateUpdates(for currency: String) async throws { }
+    func unsubscribeFromRateUpdates(for currency: String) async throws { }
+    func getSignificantRateChanges() async throws -> [RateChange] { return [] }
 } 

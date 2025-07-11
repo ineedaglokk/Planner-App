@@ -2,299 +2,265 @@ import Foundation
 import UserNotifications
 import UIKit
 
-// MARK: - NotificationService Implementation
-@Observable
+@MainActor
+protocol NotificationServiceProtocol {
+    func requestPermission() async -> Bool
+    func scheduleTaskNotification(for task: Task, minutesBefore: Int) async throws
+    func scheduleTaskReminder(for task: Task, at date: Date) async throws
+    func cancelNotification(for taskId: UUID) async
+    func cancelAllNotifications() async
+    func updateTaskNotifications(for task: Task) async
+    func getPermissionStatus() async -> UNAuthorizationStatus
+    func handleNotificationResponse(_ response: UNNotificationResponse) async
+}
+
 final class NotificationService: NSObject, NotificationServiceProtocol {
+    static let shared = NotificationService()
     
-    // MARK: - Properties
-    private let notificationCenter = UNUserNotificationCenter.current()
-    private(set) var isInitialized: Bool = false
+    private let center = UNUserNotificationCenter.current()
+    private var taskService: TaskService?
     
-    // Notification Categories
-    private let habitReminderCategory = "HABIT_REMINDER"
-    private let taskDeadlineCategory = "TASK_DEADLINE"
-    private let budgetAlertCategory = "BUDGET_ALERT"
-    private let achievementCategory = "ACHIEVEMENT_UNLOCK"
+    // Notification categories
+    private let taskDueCategory = "TASK_DUE_CATEGORY"
+    private let taskReminderCategory = "TASK_REMINDER_CATEGORY"
     
-    // MARK: - Initialization
     override init() {
         super.init()
-        notificationCenter.delegate = self
+        center.delegate = self
+        setupNotificationCategories()
     }
     
-    // MARK: - ServiceProtocol
-    func initialize() async throws {
-        guard !isInitialized else { return }
-        
-        do {
-            // Настраиваем категории уведомлений
-            setupNotificationCategories()
-            
-            // Запрашиваем разрешения
-            let granted = await requestPermission()
-            
-            if !granted {
-                #if DEBUG
-                print("Notification permissions not granted")
-                #endif
-            }
-            
-            isInitialized = true
-            
-            #if DEBUG
-            print("NotificationService initialized successfully")
-            #endif
-            
-        } catch {
-            throw AppError.from(error)
-        }
-    }
-    
-    func cleanup() async {
-        // Отменяем все запланированные уведомления
-        await cancelAllNotifications()
-        
-        isInitialized = false
-        
-        #if DEBUG
-        print("NotificationService cleaned up")
-        #endif
+    func setTaskService(_ taskService: TaskService) {
+        self.taskService = taskService
     }
     
     // MARK: - Permission Management
     
     func requestPermission() async -> Bool {
         do {
-            let options: UNAuthorizationOptions = [
-                .alert,
-                .badge,
-                .sound,
-                .provisional,
-                .criticalAlert
-            ]
-            
-            let granted = try await notificationCenter.requestAuthorization(options: options)
+            let granted = try await center.requestAuthorization(
+                options: [.alert, .badge, .sound, .provisional]
+            )
             
             if granted {
-                #if DEBUG
-                print("Notification permissions granted")
-                #endif
+                await UIApplication.shared.registerForRemoteNotifications()
             }
             
             return granted
         } catch {
-            #if DEBUG
-            print("Failed to request notification permissions: \(error)")
-            #endif
+            print("Failed to request notification permission: \(error)")
             return false
         }
     }
     
-    func checkPermissionStatus() async -> UNAuthorizationStatus {
-        let settings = await notificationCenter.notificationSettings()
+    func getPermissionStatus() async -> UNAuthorizationStatus {
+        let settings = await center.notificationSettings()
         return settings.authorizationStatus
     }
     
-    // MARK: - Notification Scheduling
+    // MARK: - Task Notifications
     
-    func scheduleHabitReminder(_ habitID: UUID, name: String, time: Date) async throws {
-        let identifier = "habit-\(habitID.uuidString)"
+    func scheduleTaskNotification(for task: Task, minutesBefore: Int = 0) async throws {
+        guard let dueDate = task.dueDate else { return }
         
-        // Создаем контент уведомления
+        let notificationDate = Calendar.current.date(
+            byAdding: .minute,
+            value: -minutesBefore,
+            to: dueDate
+        ) ?? dueDate
+        
+        // Don't schedule notifications for past dates
+        guard notificationDate > Date() else { return }
+        
         let content = UNMutableNotificationContent()
-        content.title = "Время для привычки"
-        content.body = "Не забудьте выполнить: \(name)"
+        content.title = "Дедлайн задачи"
+        content.body = task.title
         content.sound = .default
         content.badge = 1
-        content.categoryIdentifier = habitReminderCategory
+        content.categoryIdentifier = taskDueCategory
         
-        // Добавляем пользовательские данные
+        // Add user info for handling
         content.userInfo = [
-            "type": "habit_reminder",
-            "habitID": habitID.uuidString,
-            "habitName": name
+            "taskId": task.id.uuidString,
+            "taskTitle": task.title,
+            "notificationType": "due",
+            "minutesBefore": minutesBefore
         ]
         
-        // Создаем триггер на основе времени
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.hour, .minute], from: time)
+        // Add custom content if available
+        if !task.taskDescription.isEmpty {
+            content.subtitle = task.taskDescription
+        }
+        
+        // Set priority based on task priority
+        switch task.priority {
+        case .urgent:
+            content.interruptionLevel = .critical
+        case .high:
+            content.interruptionLevel = .active
+        default:
+            content.interruptionLevel = .passive
+        }
+        
+        // Create trigger
+        let trigger = UNCalendarNotificationTrigger(
+            dateMatching: Calendar.current.dateComponents(
+                [.year, .month, .day, .hour, .minute],
+                from: notificationDate
+            ),
+            repeats: false
+        )
+        
+        // Create request
+        let identifier = "task_due_\(task.id.uuidString)_\(minutesBefore)"
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
+        
+        try await center.add(request)
+        print("Scheduled notification for task '\(task.title)' at \(notificationDate)")
+    }
+    
+    func scheduleTaskReminder(for task: Task, at date: Date) async throws {
+        guard date > Date() else { return }
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Напоминание о задаче"
+        content.body = task.title
+        content.sound = .default
+        content.badge = 1
+        content.categoryIdentifier = taskReminderCategory
+        
+        content.userInfo = [
+            "taskId": task.id.uuidString,
+            "taskTitle": task.title,
+            "notificationType": "reminder"
+        ]
+        
+        if !task.taskDescription.isEmpty {
+            content.subtitle = task.taskDescription
+        }
         
         let trigger = UNCalendarNotificationTrigger(
-            dateMatching: components,
-            repeats: true
-        )
-        
-        // Создаем запрос
-        let request = UNNotificationRequest(
-            identifier: identifier,
-            content: content,
-            trigger: trigger
-        )
-        
-        do {
-            try await notificationCenter.add(request)
-            
-            #if DEBUG
-            print("Scheduled habit reminder for \(name) at \(time)")
-            #endif
-            
-        } catch {
-            throw AppError.notificationSchedulingFailed("Failed to schedule habit reminder: \(error.localizedDescription)")
-        }
-    }
-    
-    func scheduleTaskDeadline(_ taskID: UUID, title: String, deadline: Date) async throws {
-        let identifier = "task-\(taskID.uuidString)"
-        
-        // Планируем уведомление за час до дедлайна
-        let notificationDate = deadline.addingTimeInterval(-3600) // -1 час
-        
-        // Проверяем, что время уведомления в будущем
-        guard notificationDate > Date() else {
-            throw AppError.notificationSchedulingFailed("Task deadline is too close or in the past")
-        }
-        
-        let content = UNMutableNotificationContent()
-        content.title = "Приближается дедлайн задачи"
-        content.body = "Через час истекает срок выполнения: \(title)"
-        content.sound = .default
-        content.badge = 1
-        content.categoryIdentifier = taskDeadlineCategory
-        
-        content.userInfo = [
-            "type": "task_deadline",
-            "taskID": taskID.uuidString,
-            "taskTitle": title,
-            "deadline": ISO8601DateFormatter().string(from: deadline)
-        ]
-        
-        let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: notificationDate.timeIntervalSinceNow,
+            dateMatching: Calendar.current.dateComponents(
+                [.year, .month, .day, .hour, .minute],
+                from: date
+            ),
             repeats: false
         )
         
+        let identifier = "task_reminder_\(task.id.uuidString)_\(Int(date.timeIntervalSince1970))"
         let request = UNNotificationRequest(
             identifier: identifier,
             content: content,
             trigger: trigger
         )
         
+        try await center.add(request)
+        print("Scheduled reminder for task '\(task.title)' at \(date)")
+    }
+    
+    func updateTaskNotifications(for task: Task) async {
+        // Cancel existing notifications for this task
+        await cancelNotification(for: task.id)
+        
+        // Don't schedule notifications for completed tasks
+        guard !task.isCompleted else { return }
+        
+        // Schedule new notifications if task has due date and notifications are enabled
+        guard task.hasNotifications, let dueDate = task.dueDate else { return }
+        
         do {
-            try await notificationCenter.add(request)
+            // Schedule multiple notifications based on priority
+            let notificationOffsets = getNotificationOffsets(for: task.priority)
             
-            #if DEBUG
-            print("Scheduled task deadline reminder for \(title)")
-            #endif
+            for offset in notificationOffsets {
+                try await scheduleTaskNotification(for: task, minutesBefore: offset)
+            }
             
+            print("Updated notifications for task: \(task.title)")
         } catch {
-            throw AppError.notificationSchedulingFailed("Failed to schedule task deadline: \(error.localizedDescription)")
+            print("Failed to update notifications for task \(task.title): \(error)")
         }
     }
     
-    func scheduleBudgetAlert(_ budgetID: UUID, title: String, amount: Decimal) async throws {
-        let identifier = "budget-\(budgetID.uuidString)"
+    func cancelNotification(for taskId: UUID) async {
+        let identifiers = await center.pendingNotificationRequests()
+            .filter { $0.identifier.contains(taskId.uuidString) }
+            .map { $0.identifier }
         
-        let content = UNMutableNotificationContent()
-        content.title = "Превышение бюджета"
-        content.body = "Бюджет '\(title)' превышен на \(amount) ₽"
-        content.sound = .defaultCritical
-        content.badge = 1
-        content.categoryIdentifier = budgetAlertCategory
+        center.removePendingNotificationRequests(withIdentifiers: identifiers)
+        center.removeDeliveredNotifications(withIdentifiers: identifiers)
         
-        content.userInfo = [
-            "type": "budget_alert",
-            "budgetID": budgetID.uuidString,
-            "budgetTitle": title,
-            "excessAmount": NSDecimalNumber(decimal: amount).stringValue
-        ]
-        
-        // Немедленное уведомление
-        let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: 1,
-            repeats: false
-        )
-        
-        let request = UNNotificationRequest(
-            identifier: identifier,
-            content: content,
-            trigger: trigger
-        )
-        
-        do {
-            try await notificationCenter.add(request)
-            
-            #if DEBUG
-            print("Scheduled budget alert for \(title)")
-            #endif
-            
-        } catch {
-            throw AppError.notificationSchedulingFailed("Failed to schedule budget alert: \(error.localizedDescription)")
-        }
-    }
-    
-    // MARK: - Achievement Notifications
-    
-    func scheduleAchievementUnlock(_ achievementID: UUID, title: String, description: String) async throws {
-        let identifier = "achievement-\(achievementID.uuidString)"
-        
-        let content = UNMutableNotificationContent()
-        content.title = "🏆 Достижение разблокировано!"
-        content.body = "\(title): \(description)"
-        content.sound = .default
-        content.badge = 1
-        content.categoryIdentifier = achievementCategory
-        
-        content.userInfo = [
-            "type": "achievement_unlock",
-            "achievementID": achievementID.uuidString,
-            "achievementTitle": title
-        ]
-        
-        let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: 1,
-            repeats: false
-        )
-        
-        let request = UNNotificationRequest(
-            identifier: identifier,
-            content: content,
-            trigger: trigger
-        )
-        
-        do {
-            try await notificationCenter.add(request)
-            
-            #if DEBUG
-            print("Scheduled achievement notification for \(title)")
-            #endif
-            
-        } catch {
-            throw AppError.notificationSchedulingFailed("Failed to schedule achievement notification: \(error.localizedDescription)")
-        }
-    }
-    
-    // MARK: - Notification Management
-    
-    func cancelNotification(for identifier: String) async {
-        notificationCenter.removePendingNotificationRequests(withIdentifiers: [identifier])
-        notificationCenter.removeDeliveredNotifications(withIdentifiers: [identifier])
-        
-        #if DEBUG
-        print("Cancelled notification: \(identifier)")
-        #endif
+        print("Cancelled \(identifiers.count) notifications for task \(taskId)")
     }
     
     func cancelAllNotifications() async {
-        notificationCenter.removeAllPendingNotificationRequests()
-        notificationCenter.removeAllDeliveredNotifications()
+        center.removeAllPendingNotificationRequests()
+        center.removeAllDeliveredNotifications()
         
-        #if DEBUG
         print("Cancelled all notifications")
-        #endif
     }
     
-    func getPendingNotifications() async -> [UNNotificationRequest] {
-        return await notificationCenter.pendingNotificationRequests()
+    // MARK: - Recurring Task Notifications
+    
+    func scheduleRecurringTaskNotifications(for task: Task) async throws {
+        guard task.isRecurring,
+              let pattern = task.recurringPattern,
+              let dueDate = task.dueDate else { return }
+        
+        // Schedule notifications for the next few occurrences
+        let occurrences = generateRecurringDates(from: dueDate, pattern: pattern, count: 10)
+        
+        for (index, occurrence) in occurrences.enumerated() {
+            let notificationOffsets = getNotificationOffsets(for: task.priority)
+            
+            for offset in notificationOffsets {
+                let notificationDate = Calendar.current.date(
+                    byAdding: .minute,
+                    value: -offset,
+                    to: occurrence
+                ) ?? occurrence
+                
+                guard notificationDate > Date() else { continue }
+                
+                let content = UNMutableNotificationContent()
+                content.title = "Повторяющаяся задача"
+                content.body = task.title
+                content.sound = .default
+                content.badge = 1
+                content.categoryIdentifier = taskDueCategory
+                
+                content.userInfo = [
+                    "taskId": task.id.uuidString,
+                    "taskTitle": task.title,
+                    "notificationType": "recurring",
+                    "occurrenceIndex": index,
+                    "minutesBefore": offset
+                ]
+                
+                let trigger = UNCalendarNotificationTrigger(
+                    dateMatching: Calendar.current.dateComponents(
+                        [.year, .month, .day, .hour, .minute],
+                        from: notificationDate
+                    ),
+                    repeats: false
+                )
+                
+                let identifier = "task_recurring_\(task.id.uuidString)_\(index)_\(offset)"
+                let request = UNNotificationRequest(
+                    identifier: identifier,
+                    content: content,
+                    trigger: trigger
+                )
+                
+                try await center.add(request)
+            }
+        }
+        
+        print("Scheduled recurring notifications for task: \(task.title)")
     }
     
     // MARK: - Notification Response Handling
@@ -302,215 +268,156 @@ final class NotificationService: NSObject, NotificationServiceProtocol {
     func handleNotificationResponse(_ response: UNNotificationResponse) async {
         let userInfo = response.notification.request.content.userInfo
         
-        guard let type = userInfo["type"] as? String else {
-            #if DEBUG
-            print("Unknown notification type")
-            #endif
+        guard let taskIdString = userInfo["taskId"] as? String,
+              let taskId = UUID(uuidString: taskIdString) else {
             return
         }
         
-        switch type {
-        case "habit_reminder":
-            await handleHabitReminderResponse(response, userInfo: userInfo)
-        case "task_deadline":
-            await handleTaskDeadlineResponse(response, userInfo: userInfo)
-        case "budget_alert":
-            await handleBudgetAlertResponse(response, userInfo: userInfo)
-        case "achievement_unlock":
-            await handleAchievementResponse(response, userInfo: userInfo)
+        switch response.actionIdentifier {
+        case "COMPLETE_TASK":
+            await handleCompleteTaskAction(taskId: taskId)
+            
+        case "SNOOZE_TASK":
+            await handleSnoozeTaskAction(taskId: taskId)
+            
+        case "VIEW_TASK":
+            await handleViewTaskAction(taskId: taskId)
+            
+        case UNNotificationDefaultActionIdentifier:
+            // User tapped the notification
+            await handleViewTaskAction(taskId: taskId)
+            
         default:
-            #if DEBUG
-            print("Unhandled notification type: \(type)")
-            #endif
+            break
         }
     }
     
-    // MARK: - Private Methods
+    // MARK: - Helper Methods
     
     private func setupNotificationCategories() {
-        // Действия для напоминаний о привычках
-        let markHabitCompleteAction = UNNotificationAction(
-            identifier: "MARK_HABIT_COMPLETE",
-            title: "Отметить выполненной",
+        // Task Due Category
+        let completeAction = UNNotificationAction(
+            identifier: "COMPLETE_TASK",
+            title: "Завершить",
             options: [.foreground]
         )
         
-        let postponeHabitAction = UNNotificationAction(
-            identifier: "POSTPONE_HABIT",
-            title: "Напомнить позже",
+        let snoozeAction = UNNotificationAction(
+            identifier: "SNOOZE_TASK",
+            title: "Отложить",
             options: []
         )
         
-        let habitCategory = UNNotificationCategory(
-            identifier: habitReminderCategory,
-            actions: [markHabitCompleteAction, postponeHabitAction],
+        let viewAction = UNNotificationAction(
+            identifier: "VIEW_TASK",
+            title: "Открыть",
+            options: [.foreground]
+        )
+        
+        let dueCategory = UNNotificationCategory(
+            identifier: taskDueCategory,
+            actions: [completeAction, snoozeAction, viewAction],
             intentIdentifiers: [],
             options: [.customDismissAction]
         )
         
-        // Действия для дедлайнов задач
-        let markTaskCompleteAction = UNNotificationAction(
-            identifier: "MARK_TASK_COMPLETE",
-            title: "Отметить выполненной",
-            options: [.foreground]
-        )
-        
-        let openTaskAction = UNNotificationAction(
-            identifier: "OPEN_TASK",
-            title: "Открыть задачу",
-            options: [.foreground]
-        )
-        
-        let taskCategory = UNNotificationCategory(
-            identifier: taskDeadlineCategory,
-            actions: [markTaskCompleteAction, openTaskAction],
+        // Task Reminder Category
+        let reminderCategory = UNNotificationCategory(
+            identifier: taskReminderCategory,
+            actions: [viewAction],
             intentIdentifiers: [],
-            options: []
+            options: [.customDismissAction]
         )
         
-        // Действия для бюджетных уведомлений
-        let viewBudgetAction = UNNotificationAction(
-            identifier: "VIEW_BUDGET",
-            title: "Просмотреть бюджет",
-            options: [.foreground]
-        )
-        
-        let budgetCategory = UNNotificationCategory(
-            identifier: budgetAlertCategory,
-            actions: [viewBudgetAction],
-            intentIdentifiers: [],
-            options: []
-        )
-        
-        // Действия для достижений
-        let viewAchievementAction = UNNotificationAction(
-            identifier: "VIEW_ACHIEVEMENT",
-            title: "Посмотреть",
-            options: [.foreground]
-        )
-        
-        let achievementCategory = UNNotificationCategory(
-            identifier: achievementCategory,
-            actions: [viewAchievementAction],
-            intentIdentifiers: [],
-            options: []
-        )
-        
-        // Регистрируем категории
-        notificationCenter.setNotificationCategories([
-            habitCategory,
-            taskCategory,
-            budgetCategory,
-            achievementCategory
-        ])
-        
-        #if DEBUG
-        print("Notification categories configured")
-        #endif
+        center.setNotificationCategories([dueCategory, reminderCategory])
     }
     
-    // MARK: - Response Handlers
-    
-    private func handleHabitReminderResponse(_ response: UNNotificationResponse, userInfo: [AnyHashable: Any]) async {
-        guard let habitIDString = userInfo["habitID"] as? String,
-              let habitID = UUID(uuidString: habitIDString) else {
-            return
+    private func getNotificationOffsets(for priority: TaskPriority) -> [Int] {
+        switch priority {
+        case .urgent:
+            return [0, 15, 60, 1440] // Now, 15 min, 1 hour, 1 day
+        case .high:
+            return [0, 30, 1440] // Now, 30 min, 1 day
+        case .normal:
+            return [0, 1440] // Now, 1 day
+        case .low:
+            return [1440] // 1 day
         }
+    }
+    
+    private func generateRecurringDates(from startDate: Date, pattern: RecurringPattern, count: Int) -> [Date] {
+        var dates: [Date] = []
+        var currentDate = startDate
         
-        switch response.actionIdentifier {
-        case "MARK_HABIT_COMPLETE":
-            // Здесь будет интеграция с DataService для отметки привычки
-            #if DEBUG
-            print("Marking habit \(habitID) as complete")
-            #endif
+        for _ in 0..<count {
+            dates.append(currentDate)
             
-        case "POSTPONE_HABIT":
-            // Перепланируем уведомление на 30 минут позже
-            if let habitName = userInfo["habitName"] as? String {
-                let newTime = Date().addingTimeInterval(1800) // +30 минут
-                try? await scheduleHabitReminder(habitID, name: habitName, time: newTime)
+            switch pattern {
+            case .daily:
+                currentDate = Calendar.current.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+            case .weekly:
+                currentDate = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: currentDate) ?? currentDate
+            case .monthly:
+                currentDate = Calendar.current.date(byAdding: .month, value: 1, to: currentDate) ?? currentDate
+            case .yearly:
+                currentDate = Calendar.current.date(byAdding: .year, value: 1, to: currentDate) ?? currentDate
+            case .custom(let interval):
+                currentDate = Calendar.current.date(byAdding: .day, value: interval, to: currentDate) ?? currentDate
             }
-            
-        default:
-            break
+        }
+        
+        return dates
+    }
+    
+    // MARK: - Action Handlers
+    
+    private func handleCompleteTaskAction(taskId: UUID) async {
+        guard let taskService = taskService else { return }
+        
+        do {
+            await taskService.markTaskCompleted(taskId: taskId)
+            await cancelNotification(for: taskId)
+            print("Completed task \(taskId) from notification")
+        } catch {
+            print("Failed to complete task from notification: \(error)")
         }
     }
     
-    private func handleTaskDeadlineResponse(_ response: UNNotificationResponse, userInfo: [AnyHashable: Any]) async {
-        guard let taskIDString = userInfo["taskID"] as? String,
-              let taskID = UUID(uuidString: taskIDString) else {
-            return
-        }
+    private func handleSnoozeTaskAction(taskId: UUID) async {
+        // Reschedule notification for 15 minutes later
+        let snoozeDate = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date()
         
-        switch response.actionIdentifier {
-        case "MARK_TASK_COMPLETE":
-            #if DEBUG
-            print("Marking task \(taskID) as complete")
-            #endif
-            
-        case "OPEN_TASK":
-            // Отправляем уведомление для навигации к задаче
-            NotificationCenter.default.post(
-                name: .openTask,
-                object: nil,
-                userInfo: ["taskID": taskID]
-            )
-            
-        default:
-            break
+        guard let taskService = taskService,
+              let task = await taskService.getTask(id: taskId) else { return }
+        
+        do {
+            try await scheduleTaskReminder(for: task, at: snoozeDate)
+            print("Snoozed task \(taskId) until \(snoozeDate)")
+        } catch {
+            print("Failed to snooze task: \(error)")
         }
     }
     
-    private func handleBudgetAlertResponse(_ response: UNNotificationResponse, userInfo: [AnyHashable: Any]) async {
-        guard let budgetIDString = userInfo["budgetID"] as? String,
-              let budgetID = UUID(uuidString: budgetIDString) else {
-            return
-        }
-        
-        switch response.actionIdentifier {
-        case "VIEW_BUDGET":
-            NotificationCenter.default.post(
-                name: .openBudget,
-                object: nil,
-                userInfo: ["budgetID": budgetID]
-            )
-            
-        default:
-            break
-        }
-    }
-    
-    private func handleAchievementResponse(_ response: UNNotificationResponse, userInfo: [AnyHashable: Any]) async {
-        guard let achievementIDString = userInfo["achievementID"] as? String,
-              let achievementID = UUID(uuidString: achievementIDString) else {
-            return
-        }
-        
-        switch response.actionIdentifier {
-        case "VIEW_ACHIEVEMENT":
-            NotificationCenter.default.post(
-                name: .openAchievement,
-                object: nil,
-                userInfo: ["achievementID": achievementID]
-            )
-            
-        default:
-            break
-        }
+    private func handleViewTaskAction(taskId: UUID) async {
+        // Post notification to open task detail view
+        NotificationCenter.default.post(
+            name: .openTaskDetail,
+            object: nil,
+            userInfo: ["taskId": taskId]
+        )
     }
 }
 
 // MARK: - UNUserNotificationCenterDelegate
 
 extension NotificationService: UNUserNotificationCenterDelegate {
-    
     func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        // Показываем уведомления даже когда приложение активно
-        completionHandler([.banner, .sound, .badge])
+        // Show notification even when app is in foreground
+        completionHandler([.alert, .badge, .sound])
     }
     
     func userNotificationCenter(
@@ -523,36 +430,66 @@ extension NotificationService: UNUserNotificationCenterDelegate {
             completionHandler()
         }
     }
-    
-    func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        openSettingsFor notification: UNNotification?
-    ) {
-        // Открываем настройки приложения
-        if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
-            DispatchQueue.main.async {
-                UIApplication.shared.open(settingsUrl)
-            }
-        }
-    }
 }
 
 // MARK: - Notification Names
 
 extension Notification.Name {
-    static let openTask = Notification.Name("openTask")
-    static let openBudget = Notification.Name("openBudget")
-    static let openAchievement = Notification.Name("openAchievement")
-    static let habitCompleted = Notification.Name("habitCompleted")
-    static let taskCompleted = Notification.Name("taskCompleted")
+    static let openTaskDetail = Notification.Name("openTaskDetail")
+    static let taskNotificationScheduled = Notification.Name("taskNotificationScheduled")
+    static let taskNotificationCancelled = Notification.Name("taskNotificationCancelled")
 }
 
-// MARK: - NotificationService Factory
+// MARK: - Mock Implementation
 
-extension NotificationService {
+final class MockNotificationService: NotificationServiceProtocol {
+    private var scheduledNotifications: [String: Date] = [:]
     
-    /// Создает NotificationService для тестирования (без реальных уведомлений)
-    static func testing() -> NotificationService {
-        return NotificationService()
+    func requestPermission() async -> Bool {
+        print("Mock: Requesting notification permission")
+        return true
+    }
+    
+    func scheduleTaskNotification(for task: Task, minutesBefore: Int) async throws {
+        guard let dueDate = task.dueDate else { return }
+        let notificationDate = Calendar.current.date(byAdding: .minute, value: -minutesBefore, to: dueDate) ?? dueDate
+        scheduledNotifications[task.id.uuidString] = notificationDate
+        print("Mock: Scheduled notification for task '\(task.title)' at \(notificationDate)")
+    }
+    
+    func scheduleTaskReminder(for task: Task, at date: Date) async throws {
+        scheduledNotifications["reminder_\(task.id.uuidString)"] = date
+        print("Mock: Scheduled reminder for task '\(task.title)' at \(date)")
+    }
+    
+    func cancelNotification(for taskId: UUID) async {
+        scheduledNotifications.removeValue(forKey: taskId.uuidString)
+        print("Mock: Cancelled notification for task \(taskId)")
+    }
+    
+    func cancelAllNotifications() async {
+        scheduledNotifications.removeAll()
+        print("Mock: Cancelled all notifications")
+    }
+    
+    func updateTaskNotifications(for task: Task) async {
+        await cancelNotification(for: task.id)
+        
+        guard !task.isCompleted, task.hasNotifications, let _ = task.dueDate else { return }
+        
+        do {
+            try await scheduleTaskNotification(for: task, minutesBefore: 0)
+            try await scheduleTaskNotification(for: task, minutesBefore: 1440)
+        } catch {
+            print("Mock: Failed to update notifications: \(error)")
+        }
+    }
+    
+    func getPermissionStatus() async -> UNAuthorizationStatus {
+        return .authorized
+    }
+    
+    func handleNotificationResponse(_ response: UNNotificationResponse) async {
+        print("Mock: Handling notification response: \(response.actionIdentifier)")
     }
 } 
