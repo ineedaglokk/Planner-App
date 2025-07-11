@@ -326,6 +326,26 @@ extension Habit {
     private func getAllDays() -> [Int] {
         return Array(0...6) // Все дни недели
     }
+    
+    // MARK: - Archive Management
+    
+    /// Архивирует привычку
+    func archive() {
+        isArchived = true
+        archivedAt = Date()
+        isActive = false
+        updateTimestamp()
+        markForSync()
+    }
+    
+    /// Разархивирует привычку
+    func unarchive() {
+        isArchived = false
+        archivedAt = nil
+        isActive = true
+        updateTimestamp()
+        markForSync()
+    }
 }
 
 // MARK: - HabitEntry Model
