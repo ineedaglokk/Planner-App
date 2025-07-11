@@ -1,619 +1,511 @@
 import Foundation
 import SwiftData
 
-// MARK: - Achievement Model
-
+// MARK: - Achievement
 @Model
-final class Achievement: CloudKitSyncable, Timestampable {
-    
-    // MARK: - Properties
-    
+final class Achievement {
     @Attribute(.unique) var id: UUID
     var title: String
     var description: String
-    var type: AchievementType
     var category: AchievementCategory
     var rarity: AchievementRarity
-    
-    // Критерии достижения
-    var criteria: AchievementCriteria
-    var targetValue: Double // Целевое значение для достижения
-    var currentProgress: Double // Текущий прогресс
-    
-    // Статус
-    var isUnlocked: Bool
-    var isSecret: Bool // Скрытое достижение
-    var unlockedDate: Date?
-    
-    // Визуализация
-    var icon: String // SF Symbol name
-    var color: String // Hex color
-    var badgeImage: String? // Название изображения значка
-    
-    // Награды
-    var pointsReward: Int
-    var experienceReward: Int
-    var unlockableContent: String? // Разблокируемый контент
-    var specialReward: String? // Описание особой награды
-    
-    // Метаданные
+    var iconName: String
+    var colorHex: String
+    var points: Int
+    var requirements: [String: Any] // JSON для хранения требований
+    var isActive: Bool
+    var isHidden: Bool
+    var unlockedAt: Date?
     var createdAt: Date
     var updatedAt: Date
     
-    // CloudKit синхронизация
+    // CloudKit Sync
     var cloudKitRecordID: String?
     var needsSync: Bool
     var lastSynced: Date?
     
-    // MARK: - Relationships
-    
-    var user: User?
-    
-    // MARK: - Initializers
+    // Relationships
+    @Relationship(deleteRule: .cascade, inverse: \AchievementProgress.achievement)
+    var progressRecords: [AchievementProgress]
     
     init(
         title: String,
         description: String,
-        type: AchievementType,
-        category: AchievementCategory = .general,
-        rarity: AchievementRarity = .common,
-        criteria: AchievementCriteria,
-        targetValue: Double,
-        pointsReward: Int = 0,
-        experienceReward: Int = 0,
-        isSecret: Bool = false
+        category: AchievementCategory,
+        rarity: AchievementRarity,
+        iconName: String,
+        colorHex: String,
+        points: Int,
+        requirements: [String: Any] = [:],
+        isActive: Bool = true,
+        isHidden: Bool = false
     ) {
         self.id = UUID()
         self.title = title
         self.description = description
-        self.type = type
         self.category = category
         self.rarity = rarity
-        self.criteria = criteria
-        self.targetValue = targetValue
-        self.currentProgress = 0.0
-        self.pointsReward = pointsReward
-        self.experienceReward = experienceReward
-        self.isSecret = isSecret
-        
-        // Статус
-        self.isUnlocked = false
-        
-        // Визуализация
-        self.icon = type.defaultIcon
-        self.color = rarity.color
-        
-        // Метаданные
-        let now = Date()
-        self.createdAt = now
-        self.updatedAt = now
-        
-        // CloudKit
-        self.cloudKitRecordID = nil
+        self.iconName = iconName
+        self.colorHex = colorHex
+        self.points = points
+        self.requirements = requirements
+        self.isActive = isActive
+        self.isHidden = isHidden
+        self.createdAt = Date()
+        self.updatedAt = Date()
         self.needsSync = true
-        self.lastSynced = nil
+    }
+    
+    /// Проверяет, выполнены ли требования для получения достижения
+    func checkRequirements(userProgress: UserProgress) -> Bool {
+        // Базовая логика проверки требований
+        // Конкретная реализация будет в сервисе
+        return false
+    }
+    
+    /// Прогресс выполнения достижения для пользователя
+    func progressForUser(_ userID: UUID) -> AchievementProgress? {
+        return progressRecords.first { $0.userID == userID }
+    }
+    
+    /// Разблокировано ли достижение для пользователя
+    func isUnlockedForUser(_ userID: UUID) -> Bool {
+        return progressRecords.first { $0.userID == userID }?.isUnlocked ?? false
     }
 }
 
-// MARK: - Achievement Extensions
-
-extension Achievement: Validatable {
-    func validate() throws {
-        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            throw ModelValidationError.emptyName
-        }
-        
-        if targetValue <= 0 {
-            throw ModelValidationError.missingRequiredField("Целевое значение должно быть больше 0")
-        }
-        
-        if currentProgress < 0 {
-            throw ModelValidationError.negativeAmount
-        }
-    }
-}
-
-extension Achievement {
-    
-    // MARK: - Computed Properties
-    
-    /// Прогресс выполнения (0.0 - 1.0)
-    var progress: Double {
-        guard targetValue > 0 else { return 0.0 }
-        return min(currentProgress / targetValue, 1.0)
-    }
-    
-    /// Прогресс в процентах
-    var progressPercentage: Int {
-        return Int(progress * 100)
-    }
-    
-    /// Готово ли достижение к разблокировке
-    var isReadyToUnlock: Bool {
-        return !isUnlocked && progress >= 1.0
-    }
-    
-    /// Форматированный прогресс
-    var formattedProgress: String {
-        switch criteria {
-        case .streakDays, .completedHabits, .completedTasks, .completedGoals, .daysActive:
-            return "\(Int(currentProgress)) из \(Int(targetValue))"
-        case .totalPoints, .level:
-            return "\(Int(currentProgress))/\(Int(targetValue))"
-        case .savingsAmount, .spentAmount:
-            return String(format: "%.0f из %.0f ₽", currentProgress, targetValue)
-        case .custom:
-            return "\(Int(currentProgress))/\(Int(targetValue))"
-        }
-    }
-    
-    /// Название для отображения (скрывает секретные)
-    var displayTitle: String {
-        if isSecret && !isUnlocked {
-            return "???"
-        }
-        return title
-    }
-    
-    /// Описание для отображения (скрывает секретные)
-    var displayDescription: String {
-        if isSecret && !isUnlocked {
-            return "Секретное достижение"
-        }
-        return description
-    }
-    
-    /// Эмодзи для типа достижения
-    var typeEmoji: String {
-        return type.emoji
-    }
-    
-    // MARK: - Achievement Management
-    
-    /// Обновляет прогресс достижения
-    func updateProgress(_ newProgress: Double, shouldAutoUnlock: Bool = true) {
-        let oldProgress = currentProgress
-        currentProgress = max(0, newProgress)
-        
-        // Автоматическое разблокирование
-        if shouldAutoUnlock && !isUnlocked && currentProgress >= targetValue {
-            unlock()
-        }
-        
-        updateTimestamp()
-        markForSync()
-    }
-    
-    /// Увеличивает прогресс на значение
-    func incrementProgress(by value: Double, shouldAutoUnlock: Bool = true) {
-        updateProgress(currentProgress + value, shouldAutoUnlock: shouldAutoUnlock)
-    }
-    
-    /// Разблокирует достижение
-    func unlock() {
-        guard !isUnlocked else { return }
-        
-        isUnlocked = true
-        unlockedDate = Date()
-        
-        // Награждаем пользователя
-        if let user = user {
-            user.addExperience(experienceReward)
-            // user.addPoints(pointsReward) - если есть отдельная система очков
-        }
-        
-        updateTimestamp()
-        markForSync()
-    }
-    
-    /// Сбрасывает достижение (для тестирования)
-    func reset() {
-        isUnlocked = false
-        unlockedDate = nil
-        currentProgress = 0.0
-        updateTimestamp()
-        markForSync()
-    }
-    
-    /// Проверяет условие достижения
-    func checkCondition(for user: User) -> Bool {
-        let currentValue = getCurrentValue(for: user)
-        return currentValue >= targetValue
-    }
-    
-    /// Получает текущее значение для критерия
-    private func getCurrentValue(for user: User) -> Double {
-        switch criteria {
-        case .streakDays:
-            return Double(user.currentStreak)
-        case .completedHabits:
-            return Double(user.totalHabitsCompleted)
-        case .completedTasks:
-            return Double(user.totalTasksCompleted)
-        case .completedGoals:
-            return Double(user.goals.filter { $0.isCompleted }.count)
-        case .totalPoints:
-            return Double(user.totalPoints)
-        case .level:
-            return Double(user.level)
-        case .daysActive:
-            return Double(user.totalDaysActive)
-        case .savingsAmount:
-            // Подсчет общих сбережений (доходы - расходы)
-            let income = user.transactions.filter { $0.type == .income }.reduce(0) { $0 + $1.convertedAmount }
-            let expenses = user.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.convertedAmount }
-            return Double(income - expenses)
-        case .spentAmount:
-            // Общая потраченная сумма
-            return Double(user.transactions.filter { $0.type == .expense }.reduce(0) { $0 + $1.convertedAmount })
-        case .custom:
-            return currentProgress // Для пользовательских критериев используем сохраненный прогресс
-        }
-    }
-    
-    /// Обновляет прогресс на основе данных пользователя
-    func updateProgressFromUser(_ user: User) {
-        let newProgress = getCurrentValue(for: user)
-        updateProgress(newProgress)
-    }
-}
-
-// MARK: - Supporting Enums
-
-enum AchievementType: String, Codable, CaseIterable {
-    case habit = "habit"
-    case task = "task"
-    case goal = "goal"
+// MARK: - AchievementCategory
+enum AchievementCategory: String, CaseIterable, Codable {
+    case habits = "habits"
+    case tasks = "tasks"
     case finance = "finance"
-    case streak = "streak"
-    case level = "level"
+    case goals = "goals"
+    case streaks = "streaks"
+    case milestones = "milestones"
     case social = "social"
-    case milestone = "milestone"
     case special = "special"
+    case seasonal = "seasonal"
     
-    var displayName: String {
+    var localizedName: String {
         switch self {
-        case .habit: return "Привычки"
-        case .task: return "Задачи"
-        case .goal: return "Цели"
+        case .habits: return "Привычки"
+        case .tasks: return "Задачи"
         case .finance: return "Финансы"
-        case .streak: return "Серии"
-        case .level: return "Уровень"
+        case .goals: return "Цели"
+        case .streaks: return "Серии"
+        case .milestones: return "Вехи"
         case .social: return "Социальные"
-        case .milestone: return "Вехи"
         case .special: return "Особые"
+        case .seasonal: return "Сезонные"
         }
     }
     
-    var defaultIcon: String {
+    var iconName: String {
         switch self {
-        case .habit: return "repeat.circle"
-        case .task: return "checkmark.circle"
-        case .goal: return "target"
+        case .habits: return "repeat.circle"
+        case .tasks: return "checkmark.circle"
         case .finance: return "dollarsign.circle"
-        case .streak: return "flame"
-        case .level: return "star.circle"
-        case .social: return "person.2.circle"
-        case .milestone: return "flag.circle"
-        case .special: return "crown"
-        }
-    }
-    
-    var emoji: String {
-        switch self {
-        case .habit: return "🔁"
-        case .task: return "✅"
-        case .goal: return "🎯"
-        case .finance: return "💰"
-        case .streak: return "🔥"
-        case .level: return "⭐"
-        case .social: return "👥"
-        case .milestone: return "🚩"
-        case .special: return "👑"
+        case .goals: return "target"
+        case .streaks: return "flame"
+        case .milestones: return "star.circle"
+        case .social: return "person.2"
+        case .special: return "sparkles"
+        case .seasonal: return "calendar"
         }
     }
 }
 
-enum AchievementCategory: String, Codable, CaseIterable {
-    case general = "general"
-    case productivity = "productivity"
-    case health = "health"
-    case finance = "finance"
-    case social = "social"
-    case creative = "creative"
-    case learning = "learning"
-    case lifestyle = "lifestyle"
-    
-    var displayName: String {
-        switch self {
-        case .general: return "Общие"
-        case .productivity: return "Продуктивность"
-        case .health: return "Здоровье"
-        case .finance: return "Финансы"
-        case .social: return "Социальные"
-        case .creative: return "Творчество"
-        case .learning: return "Обучение"
-        case .lifestyle: return "Образ жизни"
-        }
-    }
-}
-
-enum AchievementRarity: String, Codable, CaseIterable {
+// MARK: - AchievementRarity
+enum AchievementRarity: String, CaseIterable, Codable {
     case common = "common"
     case uncommon = "uncommon"
     case rare = "rare"
     case epic = "epic"
     case legendary = "legendary"
+    case mythical = "mythical"
     
-    var displayName: String {
+    var localizedName: String {
         switch self {
         case .common: return "Обычное"
         case .uncommon: return "Необычное"
         case .rare: return "Редкое"
         case .epic: return "Эпическое"
         case .legendary: return "Легендарное"
+        case .mythical: return "Мифическое"
         }
     }
     
-    var color: String {
+    var colorHex: String {
         switch self {
-        case .common: return "#8E8E93"      // Gray
-        case .uncommon: return "#34C759"    // Green
-        case .rare: return "#007AFF"        // Blue
-        case .epic: return "#AF52DE"        // Purple
-        case .legendary: return "#FF9500"   // Orange
+        case .common: return "#9E9E9E"
+        case .uncommon: return "#4CAF50"
+        case .rare: return "#2196F3"
+        case .epic: return "#9C27B0"
+        case .legendary: return "#FF9800"
+        case .mythical: return "#F44336"
         }
     }
     
-    var experienceMultiplier: Double {
+    var pointsMultiplier: Int {
         switch self {
-        case .common: return 1.0
-        case .uncommon: return 1.5
-        case .rare: return 2.0
-        case .epic: return 3.0
-        case .legendary: return 5.0
+        case .common: return 1
+        case .uncommon: return 2
+        case .rare: return 3
+        case .epic: return 5
+        case .legendary: return 8
+        case .mythical: return 12
         }
     }
 }
 
-enum AchievementCriteria: String, Codable, CaseIterable {
-    case streakDays = "streak_days"
-    case completedHabits = "completed_habits"
-    case completedTasks = "completed_tasks"
-    case completedGoals = "completed_goals"
-    case totalPoints = "total_points"
-    case level = "level"
-    case daysActive = "days_active"
-    case savingsAmount = "savings_amount"
-    case spentAmount = "spent_amount"
-    case custom = "custom"
+// MARK: - AchievementProgress
+@Model
+final class AchievementProgress {
+    @Attribute(.unique) var id: UUID
+    var userID: UUID
+    var achievementID: UUID
+    var currentProgress: Int
+    var targetProgress: Int
+    var progressPercentage: Double
+    var isUnlocked: Bool
+    var unlockedAt: Date?
+    var notificationSent: Bool
+    var createdAt: Date
+    var updatedAt: Date
     
-    var displayName: String {
+    // CloudKit Sync
+    var cloudKitRecordID: String?
+    var needsSync: Bool
+    var lastSynced: Date?
+    
+    // Relationships
+    var achievement: Achievement?
+    
+    init(
+        userID: UUID,
+        achievementID: UUID,
+        currentProgress: Int = 0,
+        targetProgress: Int = 1
+    ) {
+        self.id = UUID()
+        self.userID = userID
+        self.achievementID = achievementID
+        self.currentProgress = currentProgress
+        self.targetProgress = targetProgress
+        self.progressPercentage = targetProgress > 0 ? Double(currentProgress) / Double(targetProgress) : 0.0
+        self.isUnlocked = false
+        self.notificationSent = false
+        self.createdAt = Date()
+        self.updatedAt = Date()
+        self.needsSync = true
+    }
+    
+    /// Обновляет прогресс и проверяет разблокировку
+    func updateProgress(_ newProgress: Int) {
+        currentProgress = newProgress
+        progressPercentage = targetProgress > 0 ? Double(currentProgress) / Double(targetProgress) : 0.0
+        
+        if currentProgress >= targetProgress && !isUnlocked {
+            unlock()
+        }
+        
+        updatedAt = Date()
+        needsSync = true
+    }
+    
+    /// Разблокирует достижение
+    func unlock() {
+        isUnlocked = true
+        unlockedAt = Date()
+        notificationSent = false
+        needsSync = true
+    }
+    
+    /// Процент прогресса в виде строки
+    var progressString: String {
+        return String(format: "%.1f%%", progressPercentage * 100)
+    }
+}
+
+// MARK: - UserLevel
+@Model
+final class UserLevel {
+    @Attribute(.unique) var id: UUID
+    var userID: UUID
+    var currentLevel: Int
+    var currentXP: Int
+    var totalXP: Int
+    var xpToNextLevel: Int
+    var prestigeLevel: Int
+    var title: String
+    var createdAt: Date
+    var updatedAt: Date
+    
+    // CloudKit Sync
+    var cloudKitRecordID: String?
+    var needsSync: Bool
+    var lastSynced: Date?
+    
+    // Relationships
+    @Relationship(deleteRule: .cascade, inverse: \LevelProgress.userLevel)
+    var levelHistory: [LevelProgress]
+    
+    init(userID: UUID) {
+        self.id = UUID()
+        self.userID = userID
+        self.currentLevel = 1
+        self.currentXP = 0
+        self.totalXP = 0
+        self.xpToNextLevel = UserLevel.calculateXPRequirement(for: 2)
+        self.prestigeLevel = 0
+        self.title = "Новичок"
+        self.createdAt = Date()
+        self.updatedAt = Date()
+        self.needsSync = true
+    }
+    
+    /// Добавляет XP и проверяет повышение уровня
+    func addXP(_ amount: Int) -> Bool {
+        let oldLevel = currentLevel
+        currentXP += amount
+        totalXP += amount
+        
+        // Проверяем повышение уровня
+        while currentXP >= xpToNextLevel {
+            currentXP -= xpToNextLevel
+            currentLevel += 1
+            
+            // Записываем историю повышения уровня
+            let levelProgress = LevelProgress(
+                userID: userID,
+                level: currentLevel,
+                xpGained: xpToNextLevel,
+                achievedAt: Date()
+            )
+            levelHistory.append(levelProgress)
+            
+            // Обновляем требования для следующего уровня
+            xpToNextLevel = UserLevel.calculateXPRequirement(for: currentLevel + 1)
+        }
+        
+        // Обновляем титул
+        title = UserLevel.titleForLevel(currentLevel)
+        updatedAt = Date()
+        needsSync = true
+        
+        return currentLevel > oldLevel
+    }
+    
+    /// Вычисляет требования XP для уровня
+    static func calculateXPRequirement(for level: Int) -> Int {
+        // Прогрессивная формула: base * level^1.5
+        let baseXP = 100
+        return Int(Double(baseXP) * pow(Double(level), 1.5))
+    }
+    
+    /// Возвращает титул для уровня
+    static func titleForLevel(_ level: Int) -> String {
+        switch level {
+        case 1...5: return "Новичок"
+        case 6...10: return "Ученик"
+        case 11...20: return "Практик"
+        case 21...35: return "Эксперт"
+        case 36...50: return "Мастер"
+        case 51...70: return "Гуру"
+        case 71...90: return "Легенда"
+        case 91...100: return "Чемпион"
+        default: return "Бессмертный"
+        }
+    }
+    
+    /// Процент прогресса к следующему уровню
+    var progressToNextLevel: Double {
+        let totalXPForNextLevel = UserLevel.calculateXPRequirement(for: currentLevel + 1)
+        return Double(currentXP) / Double(totalXPForNextLevel)
+    }
+}
+
+// MARK: - LevelProgress
+@Model
+final class LevelProgress {
+    @Attribute(.unique) var id: UUID
+    var userID: UUID
+    var level: Int
+    var xpGained: Int
+    var achievedAt: Date
+    var rewardsClaimed: Bool
+    var createdAt: Date
+    
+    // CloudKit Sync
+    var cloudKitRecordID: String?
+    var needsSync: Bool
+    var lastSynced: Date?
+    
+    // Relationships
+    var userLevel: UserLevel?
+    
+    init(
+        userID: UUID,
+        level: Int,
+        xpGained: Int,
+        achievedAt: Date
+    ) {
+        self.id = UUID()
+        self.userID = userID
+        self.level = level
+        self.xpGained = xpGained
+        self.achievedAt = achievedAt
+        self.rewardsClaimed = false
+        self.createdAt = Date()
+        self.needsSync = true
+    }
+    
+    /// Отмечает награды как полученные
+    func claimRewards() {
+        rewardsClaimed = true
+        needsSync = true
+    }
+}
+
+// MARK: - PointsHistory
+@Model
+final class PointsHistory {
+    @Attribute(.unique) var id: UUID
+    var userID: UUID
+    var amount: Int
+    var source: PointsSource
+    var sourceID: UUID?
+    var reason: String
+    var multiplier: Double
+    var bonusPoints: Int
+    var earnedAt: Date
+    var createdAt: Date
+    
+    // CloudKit Sync
+    var cloudKitRecordID: String?
+    var needsSync: Bool
+    var lastSynced: Date?
+    
+    init(
+        userID: UUID,
+        amount: Int,
+        source: PointsSource,
+        sourceID: UUID? = nil,
+        reason: String,
+        multiplier: Double = 1.0,
+        bonusPoints: Int = 0
+    ) {
+        self.id = UUID()
+        self.userID = userID
+        self.amount = amount
+        self.source = source
+        self.sourceID = sourceID
+        self.reason = reason
+        self.multiplier = multiplier
+        self.bonusPoints = bonusPoints
+        self.earnedAt = Date()
+        self.createdAt = Date()
+        self.needsSync = true
+    }
+    
+    /// Общие очки с учетом множителя и бонусов
+    var totalPoints: Int {
+        return Int(Double(amount) * multiplier) + bonusPoints
+    }
+}
+
+// MARK: - PointsSource
+enum PointsSource: String, CaseIterable, Codable {
+    case habitCompleted = "habit_completed"
+    case taskCompleted = "task_completed"
+    case goalAchieved = "goal_achieved"
+    case streakMilestone = "streak_milestone"
+    case achievementUnlocked = "achievement_unlocked"
+    case levelUp = "level_up"
+    case challengeCompleted = "challenge_completed"
+    case dailyLogin = "daily_login"
+    case weeklyGoal = "weekly_goal"
+    case monthlyGoal = "monthly_goal"
+    case specialEvent = "special_event"
+    case bonus = "bonus"
+    
+    var localizedName: String {
         switch self {
-        case .streakDays: return "Дни подряд"
-        case .completedHabits: return "Выполненные привычки"
-        case .completedTasks: return "Выполненные задачи"
-        case .completedGoals: return "Достигнутые цели"
-        case .totalPoints: return "Общие очки"
-        case .level: return "Уровень"
-        case .daysActive: return "Активные дни"
-        case .savingsAmount: return "Сумма сбережений"
-        case .spentAmount: return "Потраченная сумма"
-        case .custom: return "Особый критерий"
+        case .habitCompleted: return "Выполнена привычка"
+        case .taskCompleted: return "Выполнена задача"
+        case .goalAchieved: return "Достигнута цель"
+        case .streakMilestone: return "Веха серии"
+        case .achievementUnlocked: return "Разблокировано достижение"
+        case .levelUp: return "Повышение уровня"
+        case .challengeCompleted: return "Выполнен вызов"
+        case .dailyLogin: return "Ежедневный вход"
+        case .weeklyGoal: return "Недельная цель"
+        case .monthlyGoal: return "Месячная цель"
+        case .specialEvent: return "Особое событие"
+        case .bonus: return "Бонус"
+        }
+    }
+    
+    var iconName: String {
+        switch self {
+        case .habitCompleted: return "repeat.circle.fill"
+        case .taskCompleted: return "checkmark.circle.fill"
+        case .goalAchieved: return "target"
+        case .streakMilestone: return "flame.fill"
+        case .achievementUnlocked: return "star.fill"
+        case .levelUp: return "arrow.up.circle.fill"
+        case .challengeCompleted: return "flag.fill"
+        case .dailyLogin: return "calendar"
+        case .weeklyGoal: return "7.circle.fill"
+        case .monthlyGoal: return "calendar.circle.fill"
+        case .specialEvent: return "sparkles"
+        case .bonus: return "plus.circle.fill"
+        }
+    }
+    
+    var basePoints: Int {
+        switch self {
+        case .habitCompleted: return 10
+        case .taskCompleted: return 15
+        case .goalAchieved: return 50
+        case .streakMilestone: return 25
+        case .achievementUnlocked: return 100
+        case .levelUp: return 200
+        case .challengeCompleted: return 75
+        case .dailyLogin: return 5
+        case .weeklyGoal: return 100
+        case .monthlyGoal: return 300
+        case .specialEvent: return 150
+        case .bonus: return 20
         }
     }
 }
 
-// MARK: - Predefined Achievements
-
-extension Achievement {
+// MARK: - UserProgress
+struct UserProgress {
+    let userID: UUID
+    let totalHabits: Int
+    let completedHabits: Int
+    let currentStreak: Int
+    let longestStreak: Int
+    let totalTasks: Int
+    let completedTasks: Int
+    let totalGoals: Int
+    let achievedGoals: Int
+    let totalXP: Int
+    let currentLevel: Int
+    let daysActive: Int
+    let lastActiveDate: Date
     
-    /// Создает набор предустановленных достижений
-    static func createDefaultAchievements() -> [Achievement] {
-        var achievements: [Achievement] = []
-        
-        // Достижения за привычки
-        achievements.append(contentsOf: [
-            Achievement(
-                title: "Первый шаг",
-                description: "Выполните свою первую привычку",
-                type: .habit,
-                category: .general,
-                rarity: .common,
-                criteria: .completedHabits,
-                targetValue: 1,
-                pointsReward: 10,
-                experienceReward: 50
-            ),
-            Achievement(
-                title: "Приверженец",
-                description: "Выполните 100 привычек",
-                type: .habit,
-                category: .productivity,
-                rarity: .uncommon,
-                criteria: .completedHabits,
-                targetValue: 100,
-                pointsReward: 100,
-                experienceReward: 500
-            ),
-            Achievement(
-                title: "Мастер привычек",
-                description: "Выполните 1000 привычек",
-                type: .habit,
-                category: .productivity,
-                rarity: .rare,
-                criteria: .completedHabits,
-                targetValue: 1000,
-                pointsReward: 500,
-                experienceReward: 2000
-            )
-        ])
-        
-        // Достижения за серии
-        achievements.append(contentsOf: [
-            Achievement(
-                title: "Неделя силы воли",
-                description: "Поддерживайте серию 7 дней",
-                type: .streak,
-                category: .productivity,
-                rarity: .common,
-                criteria: .streakDays,
-                targetValue: 7,
-                pointsReward: 50,
-                experienceReward: 200
-            ),
-            Achievement(
-                title: "Месяц дисциплины",
-                description: "Поддерживайте серию 30 дней",
-                type: .streak,
-                category: .productivity,
-                rarity: .uncommon,
-                criteria: .streakDays,
-                targetValue: 30,
-                pointsReward: 200,
-                experienceReward: 800
-            ),
-            Achievement(
-                title: "Год постоянства",
-                description: "Поддерживайте серию 365 дней",
-                type: .streak,
-                category: .lifestyle,
-                rarity: .legendary,
-                criteria: .streakDays,
-                targetValue: 365,
-                pointsReward: 2000,
-                experienceReward: 10000,
-                isSecret: true
-            )
-        ])
-        
-        // Достижения за задачи
-        achievements.append(contentsOf: [
-            Achievement(
-                title: "Продуктивный день",
-                description: "Выполните 10 задач",
-                type: .task,
-                category: .productivity,
-                rarity: .common,
-                criteria: .completedTasks,
-                targetValue: 10,
-                pointsReward: 20,
-                experienceReward: 100
-            ),
-            Achievement(
-                title: "Мега продуктивность",
-                description: "Выполните 500 задач",
-                type: .task,
-                category: .productivity,
-                rarity: .rare,
-                criteria: .completedTasks,
-                targetValue: 500,
-                pointsReward: 300,
-                experienceReward: 1500
-            )
-        ])
-        
-        // Достижения за цели
-        achievements.append(contentsOf: [
-            Achievement(
-                title: "Целеустремленный",
-                description: "Достигните своей первой цели",
-                type: .goal,
-                category: .general,
-                rarity: .common,
-                criteria: .completedGoals,
-                targetValue: 1,
-                pointsReward: 100,
-                experienceReward: 300
-            ),
-            Achievement(
-                title: "Покоритель вершин",
-                description: "Достигните 10 целей",
-                type: .goal,
-                category: .productivity,
-                rarity: .uncommon,
-                criteria: .completedGoals,
-                targetValue: 10,
-                pointsReward: 500,
-                experienceReward: 1000
-            )
-        ])
-        
-        // Финансовые достижения
-        achievements.append(contentsOf: [
-            Achievement(
-                title: "Первые сбережения",
-                description: "Накопите 10,000 рублей",
-                type: .finance,
-                category: .finance,
-                rarity: .common,
-                criteria: .savingsAmount,
-                targetValue: 10000,
-                pointsReward: 100,
-                experienceReward: 500
-            ),
-            Achievement(
-                title: "Финансовая подушка",
-                description: "Накопите 100,000 рублей",
-                type: .finance,
-                category: .finance,
-                rarity: .uncommon,
-                criteria: .savingsAmount,
-                targetValue: 100000,
-                pointsReward: 500,
-                experienceReward: 2000
-            ),
-            Achievement(
-                title: "Миллионер",
-                description: "Накопите 1,000,000 рублей",
-                type: .finance,
-                category: .finance,
-                rarity: .legendary,
-                criteria: .savingsAmount,
-                targetValue: 1000000,
-                pointsReward: 5000,
-                experienceReward: 20000,
-                isSecret: true
-            )
-        ])
-        
-        // Достижения за уровень
-        achievements.append(contentsOf: [
-            Achievement(
-                title: "Новичок",
-                description: "Достигните 5 уровня",
-                type: .level,
-                category: .general,
-                rarity: .common,
-                criteria: .level,
-                targetValue: 5,
-                pointsReward: 50,
-                experienceReward: 200
-            ),
-            Achievement(
-                title: "Эксперт",
-                description: "Достигните 25 уровня",
-                type: .level,
-                category: .productivity,
-                rarity: .uncommon,
-                criteria: .level,
-                targetValue: 25,
-                pointsReward: 250,
-                experienceReward: 1000
-            ),
-            Achievement(
-                title: "Гуру продуктивности",
-                description: "Достигните 50 уровня",
-                type: .level,
-                category: .productivity,
-                rarity: .epic,
-                criteria: .level,
-                targetValue: 50,
-                pointsReward: 1000,
-                experienceReward: 5000
-            )
-        ])
-        
-        return achievements
+    var completionRate: Double {
+        return totalHabits > 0 ? Double(completedHabits) / Double(totalHabits) : 0.0
+    }
+    
+    var taskCompletionRate: Double {
+        return totalTasks > 0 ? Double(completedTasks) / Double(totalTasks) : 0.0
+    }
+    
+    var goalAchievementRate: Double {
+        return totalGoals > 0 ? Double(achievedGoals) / Double(totalGoals) : 0.0
     }
 } 

@@ -68,6 +68,8 @@ final class TasksListViewModel {
     
     // Dependencies
     private let taskService: TaskServiceProtocol
+    private let gameService: GameServiceProtocol
+    private let user: User
     private let dateParser = DateParser()
     
     // MARK: - Computed Properties
@@ -90,8 +92,14 @@ final class TasksListViewModel {
     
     // MARK: - Initialization
     
-    init(taskService: TaskServiceProtocol) {
+    init(
+        taskService: TaskServiceProtocol,
+        gameService: GameServiceProtocol,
+        user: User
+    ) {
         self.taskService = taskService
+        self.gameService = gameService
+        self.user = user
     }
     
     // MARK: - Input Handling
@@ -246,11 +254,17 @@ final class TasksListViewModel {
     
     private func toggleTaskCompletion(_ task: Task) async {
         do {
-            if task.status == .completed {
+            let wasCompleted = task.status == .completed
+            
+            if wasCompleted {
                 try await taskService.uncompleteTask(task)
             } else {
                 try await taskService.completeTask(task)
+                
+                // 🎮 Trigger gamification when task is completed
+                try await gameService.processTaskCompletion(task, for: user)
             }
+            
             await refreshTasks()
         } catch {
             state.error = AppError.from(error)

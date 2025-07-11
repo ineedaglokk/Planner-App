@@ -54,15 +54,21 @@ final class HabitsListViewModel {
     // Dependencies
     private let habitService: HabitServiceProtocol
     private let errorHandlingService: ErrorHandlingServiceProtocol
+    private let gameService: GameServiceProtocol
+    private let user: User
     
     // MARK: - Initialization
     
     init(
         habitService: HabitServiceProtocol,
-        errorHandlingService: ErrorHandlingServiceProtocol
+        errorHandlingService: ErrorHandlingServiceProtocol,
+        gameService: GameServiceProtocol,
+        user: User
     ) {
         self.habitService = habitService
         self.errorHandlingService = errorHandlingService
+        self.gameService = gameService
+        self.user = user
     }
     
     // MARK: - Input Handling
@@ -207,6 +213,11 @@ final class HabitsListViewModel {
     private func toggleHabitCompletion(_ habit: Habit) async {
         do {
             let wasCompleted = try await habitService.toggleHabitCompletion(habit)
+            
+            // 🎮 Trigger gamification if habit was completed
+            if wasCompleted {
+                try await gameService.processHabitCompletion(habit, for: user)
+            }
             
             // Update local state
             if let index = state.habits.firstIndex(where: { $0.id == habit.id }) {

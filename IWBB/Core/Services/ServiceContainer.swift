@@ -32,6 +32,14 @@ protocol ServiceContainerProtocol {
     // Integration Services
     var eventKitIntegrationService: EventKitIntegrationServiceProtocol { get }
     
+    // 🆕 Геймификация
+    var pointsCalculationService: PointsCalculationServiceProtocol { get }
+    var achievementService: AchievementServiceProtocol { get }
+    var challengeService: ChallengeServiceProtocol { get }
+    var levelProgressionService: LevelProgressionServiceProtocol { get }
+    var motivationService: MotivationServiceProtocol { get }
+    var gameService: GameServiceProtocol { get }
+    
     func initializeAllServices() async throws
     func cleanupAllServices() async
 }
@@ -72,6 +80,14 @@ final class ServiceContainer: ServiceContainerProtocol {
     
     // Integration Services
     private var _eventKitIntegrationService: EventKitIntegrationServiceProtocol?
+    
+    // 🆕 Геймификация Services
+    private var _pointsCalculationService: PointsCalculationServiceProtocol?
+    private var _achievementService: AchievementServiceProtocol?
+    private var _challengeService: ChallengeServiceProtocol?
+    private var _levelProgressionService: LevelProgressionServiceProtocol?
+    private var _motivationService: MotivationServiceProtocol?
+    private var _gameService: GameServiceProtocol?
     
     // Service initialization queue
     private let serviceQueue = DispatchQueue(label: "com.plannerapp.services", qos: .userInitiated)
@@ -495,6 +511,134 @@ final class ServiceContainer: ServiceContainerProtocol {
         return service
     }
     
+    // MARK: - Gamification Services Access Properties
+    
+    var pointsCalculationService: PointsCalculationServiceProtocol {
+        if let service = _pointsCalculationService {
+            return service
+        }
+        
+        let service = PointsCalculationService(modelContext: modelContainer.mainContext)
+        _pointsCalculationService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var achievementService: AchievementServiceProtocol {
+        if let service = _achievementService {
+            return service
+        }
+        
+        let service = AchievementService(
+            modelContext: modelContainer.mainContext,
+            pointsService: pointsCalculationService,
+            notificationService: notificationService
+        )
+        _achievementService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var challengeService: ChallengeServiceProtocol {
+        if let service = _challengeService {
+            return service
+        }
+        
+        let service = ChallengeService(
+            modelContext: modelContainer.mainContext,
+            pointsService: pointsCalculationService,
+            achievementService: achievementService,
+            notificationService: notificationService
+        )
+        _challengeService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var levelProgressionService: LevelProgressionServiceProtocol {
+        if let service = _levelProgressionService {
+            return service
+        }
+        
+        let service = LevelProgressionService(
+            modelContext: modelContainer.mainContext,
+            pointsService: pointsCalculationService,
+            achievementService: achievementService,
+            notificationService: notificationService
+        )
+        _levelProgressionService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var motivationService: MotivationServiceProtocol {
+        if let service = _motivationService {
+            return service
+        }
+        
+        let service = MotivationService(
+            modelContext: modelContainer.mainContext,
+            notificationService: notificationService
+        )
+        _motivationService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var gameService: GameServiceProtocol {
+        if let service = _gameService {
+            return service
+        }
+        
+        let service = GameService(
+            modelContext: modelContainer.mainContext,
+            pointsService: pointsCalculationService,
+            achievementService: achievementService,
+            challengeService: challengeService,
+            levelService: levelProgressionService,
+            motivationService: motivationService
+        )
+        _gameService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
     // MARK: - Service Lifecycle
     
     func initializeAllServices() async throws {
@@ -535,6 +679,9 @@ final class ServiceContainer: ServiceContainerProtocol {
             
             // 8. Advanced Services after all dependencies
             try await initializeAdvancedServices()
+            
+            // 9. 🆕 Gamification Services after all dependencies
+            try await initializeGamificationServices()
             
             // Настраиваем связи между сервисами
             setupServiceDependencies()
@@ -636,6 +783,31 @@ final class ServiceContainer: ServiceContainerProtocol {
             await transactionRepository.cleanup()
         }
         
+        // 🆕 Cleanup Gamification Services
+        if let gameService = _gameService {
+            await gameService.cleanup()
+        }
+        
+        if let motivationService = _motivationService {
+            await motivationService.cleanup()
+        }
+        
+        if let levelProgressionService = _levelProgressionService {
+            await levelProgressionService.cleanup()
+        }
+        
+        if let challengeService = _challengeService {
+            await challengeService.cleanup()
+        }
+        
+        if let achievementService = _achievementService {
+            await achievementService.cleanup()
+        }
+        
+        if let pointsCalculationService = _pointsCalculationService {
+            await pointsCalculationService.cleanup()
+        }
+        
         // Обнуляем ссылки
         _dataService = nil
         _notificationService = nil
@@ -655,6 +827,14 @@ final class ServiceContainer: ServiceContainerProtocol {
         _projectManagementService = nil
         _timeBlockingService = nil
         _templateService = nil
+        
+        // 🆕 Обнуляем ссылки на сервисы геймификации
+        _pointsCalculationService = nil
+        _achievementService = nil
+        _challengeService = nil
+        _levelProgressionService = nil
+        _motivationService = nil
+        _gameService = nil
         
         isInitialized = false
         
@@ -709,6 +889,24 @@ final class ServiceContainer: ServiceContainerProtocol {
         #endif
     }
     
+    private func initializeGamificationServices() async throws {
+        #if DEBUG
+        print("Initializing Gamification Services...")
+        #endif
+        
+        // Initialize in correct dependency order
+        try await pointsCalculationService.initialize()
+        try await achievementService.initialize()
+        try await challengeService.initialize()
+        try await levelProgressionService.initialize()
+        try await motivationService.initialize()
+        try await gameService.initialize()
+        
+        #if DEBUG
+        print("Gamification Services initialized successfully")
+        #endif
+    }
+    
     private func setupServiceDependencies() {
         // Настраиваем ErrorHandlingService как презентационный делегат
         // для отображения ошибок (это будет реализовано на уровне UI)
@@ -745,7 +943,13 @@ extension ServiceContainer {
                (_billReminderService?.isInitialized ?? false) &&
                (_projectManagementService?.isInitialized ?? false) &&
                (_timeBlockingService?.isInitialized ?? false) &&
-               (_templateService?.isInitialized ?? false)
+               (_templateService?.isInitialized ?? false) &&
+               (_pointsCalculationService?.isInitialized ?? false) &&
+               (_achievementService?.isInitialized ?? false) &&
+               (_challengeService?.isInitialized ?? false) &&
+               (_levelProgressionService?.isInitialized ?? false) &&
+               (_motivationService?.isInitialized ?? false) &&
+               (_gameService?.isInitialized ?? false)
     }
     
     /// Возвращает статус каждого сервиса
@@ -768,7 +972,13 @@ extension ServiceContainer {
             "BillReminderService": _billReminderService?.isInitialized ?? false,
             "ProjectManagementService": _projectManagementService?.isInitialized ?? false,
             "TimeBlockingService": _timeBlockingService?.isInitialized ?? false,
-            "TemplateService": _templateService?.isInitialized ?? false
+            "TemplateService": _templateService?.isInitialized ?? false,
+            "PointsCalculationService": _pointsCalculationService?.isInitialized ?? false,
+            "AchievementService": _achievementService?.isInitialized ?? false,
+            "ChallengeService": _challengeService?.isInitialized ?? false,
+            "LevelProgressionService": _levelProgressionService?.isInitialized ?? false,
+            "MotivationService": _motivationService?.isInitialized ?? false,
+            "GameService": _gameService?.isInitialized ?? false
         ]
     }
     
