@@ -3,542 +3,346 @@
 //  IWBB
 //
 //  Created by AI Assistant
-//  Основной интерфейс приложения с навигацией
+//  Основная навигационная структура приложения
 //
 
 import SwiftUI
 
 struct ContentView: View {
     
-    // MARK: - Properties
+    // MARK: - Navigation State
     @State private var navigationManager = NavigationManager.shared
-    @State private var themeManager = ThemeManager.shared
+    @State private var selectedTab: TabItem = .dashboard
     
     var body: some View {
-        Group {
-            #if os(iOS)
-            iOSContentView()
-            #elseif os(macOS)
-            macOSContentView()
-            #endif
-        }
-        .environment(\.navigationManager, navigationManager)
-        .environment(\.theme, themeManager.currentTheme)
-        .onAppear {
-            configureAppearance()
-        }
-    }
-    
-    // MARK: - iOS Content
-    @ViewBuilder
-    private func iOSContentView() -> some View {
-        AppNavigationView()
-            .onOpenURL { url in
-                navigationManager.handleDeepLink(url)
-            }
-    }
-    
-    // MARK: - macOS Content  
-    @ViewBuilder
-    private func macOSContentView() -> some View {
-        NavigationSplitView {
-            // Sidebar
-            macOSSidebar()
-                .navigationSplitViewColumnWidth(min: 200, ideal: 250, max: 300)
-        } detail: {
-            // Detail View
-            macOSDetailView()
-        }
-        .navigationTitle("IWBB")
-    }
-    
-    // MARK: - macOS Sidebar
-    @ViewBuilder
-    private func macOSSidebar() -> some View {
-        List(selection: $navigationManager.selectedTab) {
-            Section("Основное") {
-                ForEach(TabItem.allCases, id: \.self) { tab in
-                    NavigationLink(value: tab) {
-                        HStack(spacing: Spacing.md) {
-                            Image(systemName: tab.icon)
-                                .foregroundColor(tab.color)
-                                .frame(width: 20)
-                            
-                            Text(tab.title)
-                                .font(Typography.Body.medium)
-                        }
+        TabView(selection: $selectedTab) {
+            // Dashboard Tab
+            NavigationStack(path: $navigationManager.dashboardPath) {
+                DashboardView()
+                    .navigationDestination(for: NavigationDestination.self) { destination in
+                        destinationView(for: destination)
                     }
-                }
             }
-        }
-        .listStyle(.sidebar)
-    }
-    
-    // MARK: - macOS Detail View
-    @ViewBuilder 
-    private func macOSDetailView() -> some View {
-        Group {
-            switch navigationManager.selectedTab {
-            case .dashboard:
-                DashboardTabView()
-            case .habits:
-                HabitsTabView()
-            case .tasks:
-                TasksTabView()
-            case .finance:
-                FinanceTabView()
-            case .settings:
-                SettingsTabView()
+            .tabItem {
+                Label(TabItem.dashboard.title, systemImage: selectedTab == .dashboard ? TabItem.dashboard.selectedIcon : TabItem.dashboard.icon)
             }
+            .tag(TabItem.dashboard)
+            
+            // Habits Tab
+            NavigationStack(path: $navigationManager.habitsPath) {
+                HabitsListView()
+                    .navigationDestination(for: NavigationDestination.self) { destination in
+                        destinationView(for: destination)
+                    }
+            }
+            .tabItem {
+                Label(TabItem.habits.title, systemImage: selectedTab == .habits ? TabItem.habits.selectedIcon : TabItem.habits.icon)
+            }
+            .tag(TabItem.habits)
+            
+            // Tasks & Goals Tab
+            NavigationStack(path: $navigationManager.tasksPath) {
+                TasksAndGoalsView()
+                    .navigationDestination(for: NavigationDestination.self) { destination in
+                        destinationView(for: destination)
+                    }
+            }
+            .tabItem {
+                Label(TabItem.tasks.title, systemImage: selectedTab == .tasks ? TabItem.tasks.selectedIcon : TabItem.tasks.icon)
+            }
+            .tag(TabItem.tasks)
+            
+            // Finance Tab
+            NavigationStack(path: $navigationManager.financePath) {
+                FinanceView()
+                    .navigationDestination(for: NavigationDestination.self) { destination in
+                        destinationView(for: destination)
+                    }
+            }
+            .tabItem {
+                Label(TabItem.finance.title, systemImage: selectedTab == .finance ? TabItem.finance.selectedIcon : TabItem.finance.icon)
+            }
+            .tag(TabItem.finance)
+            
+            // Profile & Settings Tab
+            NavigationStack(path: $navigationManager.settingsPath) {
+                ProfileAndSettingsView()
+                    .navigationDestination(for: NavigationDestination.self) { destination in
+                        destinationView(for: destination)
+                    }
+            }
+            .tabItem {
+                Label(TabItem.settings.title, systemImage: selectedTab == .settings ? TabItem.settings.selectedIcon : TabItem.settings.icon)
+            }
+            .tag(TabItem.settings)
         }
-        .frame(minWidth: 600, minHeight: 400)
+        .onChange(of: selectedTab) { _, newValue in
+            navigationManager.selectedTab = newValue
+        }
+        .accentColor(ColorPalette.Primary.main)
+        .environment(navigationManager)
     }
     
-    // MARK: - Configuration
-    private func configureAppearance() {
-        // Настройка глобального внешнего вида
-        #if os(iOS)
-        configureTabBarAppearance()
-        configureNavigationBarAppearance()
-        #endif
-    }
-    
-    #if os(iOS)
-    private func configureTabBarAppearance() {
-        let appearance = UITabBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(ColorPalette.Background.surface)
-        
-        // Настройка цветов иконок
-        appearance.stackedLayoutAppearance.normal.iconColor = UIColor(ColorPalette.Text.tertiary)
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(ColorPalette.Primary.main)
-        
-        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-            .foregroundColor: UIColor(ColorPalette.Text.tertiary),
-            .font: UIFont.systemFont(ofSize: 10, weight: .medium)
-        ]
-        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-            .foregroundColor: UIColor(ColorPalette.Primary.main),
-            .font: UIFont.systemFont(ofSize: 10, weight: .semibold)
-        ]
-        
-        UITabBar.appearance().standardAppearance = appearance
-        UITabBar.appearance().scrollEdgeAppearance = appearance
-    }
-    
-    private func configureNavigationBarAppearance() {
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(ColorPalette.Background.primary)
-        appearance.titleTextAttributes = [
-            .foregroundColor: UIColor(ColorPalette.Text.primary),
-            .font: UIFont.systemFont(ofSize: 17, weight: .semibold)
-        ]
-        appearance.largeTitleTextAttributes = [
-            .foregroundColor: UIColor(ColorPalette.Text.primary),
-            .font: UIFont.systemFont(ofSize: 34, weight: .bold)
-        ]
-        
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
-        UINavigationBar.appearance().compactAppearance = appearance
-    }
-    #endif
-}
-
-// MARK: - Environment Keys
-struct NavigationManagerKey: EnvironmentKey {
-    static let defaultValue = NavigationManager.shared
-}
-
-extension EnvironmentValues {
-    var navigationManager: NavigationManager {
-        get { self[NavigationManagerKey.self] }
-        set { self[NavigationManagerKey.self] = newValue }
+    // MARK: - Navigation Destination Builder
+    @ViewBuilder
+    private func destinationView(for destination: NavigationDestination) -> some View {
+        switch destination {
+        // Habits
+        case .habitDetail(let id):
+            HabitDetailView(habitID: id)
+        case .createHabit:
+            CreateHabitView()
+        case .editHabit(let id):
+            EditHabitView(habitID: id)
+        case .habitStatistics(let id):
+            HabitStatisticsView(habitID: id)
+            
+        // Tasks
+        case .taskDetail(let id):
+            TaskDetailView(taskID: id)
+        case .createTask:
+            CreateTaskView()
+        case .editTask(let id):
+            EditTaskView(taskID: id)
+        case .projectView(let id):
+            ProjectView(projectID: id)
+            
+        // Goals
+        case .goalDetail(let id):
+            GoalDetailView(goalID: id)
+        case .createGoal:
+            CreateGoalView()
+        case .editGoal(let id):
+            EditGoalView(goalID: id)
+            
+        // Finance
+        case .transactionDetail(let id):
+            TransactionDetailView(transactionID: id)
+        case .addTransaction:
+            AddTransactionView()
+        case .editTransaction(let id):
+            EditTransactionView(transactionID: id)
+        case .budgetManagement:
+            BudgetManagementView()
+        case .financialReports:
+            FinancialReportsView()
+            
+        // Settings
+        case .profileSettings:
+            ProfileSettingsView()
+        case .notificationSettings:
+            NotificationSettingsView()
+        case .dataExport:
+            DataExportView()
+        case .about:
+            AboutView()
+        }
     }
 }
 
-// MARK: - Dashboard Enhanced View
-struct DashboardTabView: View {
-    
-    @State private var currentTime = Date()
-    @State private var showQuickActions = false
-    
-    // Timer для обновления времени
-    private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
-    
+// MARK: - Placeholder Views (временные заглушки)
+struct DashboardView: View {
     var body: some View {
-        ScrollView {
-            LazyVStack(spacing: Spacing.sectionSpacing) {
-                
-                // Приветствие и время
-                greetingSection
-                
-                // Быстрые действия
-                quickActionsSection
-                
-                // Сегодняшние задачи
-                todayTasksSection
-                
-                // Статистика привычек
-                habitsStatsSection
-                
-                // Финансовая сводка
-                financeSummarySection
-                
-                // Достижения
-                achievementsSection
-            }
-            .screenPadding()
+        VStack {
+            Text("Дашборд")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            Text("Здесь будет обзор всех данных")
+                .foregroundColor(.secondary)
         }
-        .refreshable {
-            // Обновление данных
-            await refreshDashboardData()
-        }
-        .customNavigationBar(
-            title: "Обзор",
-            trailingAction: {
-                showQuickActions.toggle()
-            },
-            trailingIcon: "plus.circle"
-        )
-        .sheet(isPresented: $showQuickActions) {
-            QuickActionsSheet()
-        }
-        .onReceive(timer) { _ in
-            currentTime = Date()
-        }
-    }
-    
-    // MARK: - Sections
-    
-    @ViewBuilder
-    private var greetingSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack {
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    Text(greetingText)
-                        .font(Typography.Headline.large)
-                        .foregroundColor(ColorPalette.Text.primary)
-                    
-                    Text(formatDate(currentTime))
-                        .font(Typography.Body.medium)
-                        .foregroundColor(ColorPalette.Text.secondary)
-                }
-                
-                Spacer()
-                
-                // Погода или настроение виджет
-                weatherWidget
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var quickActionsSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            Text("Быстрые действия")
-                .font(Typography.Headline.medium)
-                .foregroundColor(ColorPalette.Text.primary)
-            
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: Spacing.md) {
-                ActionCard(
-                    title: "Отметить привычку",
-                    description: "Быстро отметить выполненную привычку",
-                    icon: "checkmark.circle.fill",
-                    color: ColorPalette.Habits.health
-                ) {
-                    // Quick habit check
-                }
-                
-                ActionCard(
-                    title: "Добавить задачу",
-                    description: "Создать новую задачу",
-                    icon: "plus.circle.fill",
-                    color: ColorPalette.Secondary.main
-                ) {
-                    NavigationManager.shared.navigate(to: .createTask, in: .tasks)
-                }
-                
-                ActionCard(
-                    title: "Записать расход",
-                    description: "Добавить новую транзакцию",
-                    icon: "minus.circle.fill",
-                    color: ColorPalette.Financial.expense
-                ) {
-                    NavigationManager.shared.navigate(to: .addTransaction, in: .finance)
-                }
-                
-                ActionCard(
-                    title: "Посмотреть цели",
-                    description: "Проверить прогресс целей",
-                    icon: "target",
-                    color: ColorPalette.Primary.main
-                ) {
-                    // Goals view
-                }
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var todayTasksSection: some View {
-        InfoCard(
-            title: "Задачи на сегодня",
-            subtitle: "Осталось выполнить",
-            icon: "checklist",
-            value: "3 из 7",
-            style: .elevated
-        ) {
-            NavigationManager.shared.selectedTab = .tasks
-        }
-    }
-    
-    @ViewBuilder
-    private var habitsStatsSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack {
-                Text("Привычки")
-                    .font(Typography.Headline.medium)
-                    .foregroundColor(ColorPalette.Text.primary)
-                
-                Spacer()
-                
-                Button("Все") {
-                    NavigationManager.shared.selectedTab = .habits
-                }
-                .font(Typography.Body.medium)
-                .foregroundColor(ColorPalette.Primary.main)
-            }
-            
-            HStack(spacing: Spacing.md) {
-                StatisticCard(
-                    title: "Выполнено сегодня",
-                    value: "5/8",
-                    change: "+2",
-                    changeType: .positive,
-                    icon: "checkmark.circle",
-                    color: ColorPalette.Semantic.success
-                )
-                
-                StatisticCard(
-                    title: "Серия дней",
-                    value: "12",
-                    change: "+1",
-                    changeType: .positive,
-                    icon: "flame",
-                    color: ColorPalette.Semantic.warning
-                )
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var financeSummarySection: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack {
-                Text("Финансы")
-                    .font(Typography.Headline.medium)
-                    .foregroundColor(ColorPalette.Text.primary)
-                
-                Spacer()
-                
-                Button("Подробнее") {
-                    NavigationManager.shared.selectedTab = .finance
-                }
-                .font(Typography.Body.medium)
-                .foregroundColor(ColorPalette.Primary.main)
-            }
-            
-            HStack(spacing: Spacing.md) {
-                StatisticCard(
-                    title: "Доходы",
-                    value: "₽45,000",
-                    change: "+8%",
-                    changeType: .positive,
-                    icon: "arrow.up.circle",
-                    color: ColorPalette.Financial.income
-                )
-                
-                StatisticCard(
-                    title: "Расходы",
-                    value: "₽32,500",
-                    change: "-3%",
-                    changeType: .negative,
-                    icon: "arrow.down.circle",
-                    color: ColorPalette.Financial.expense
-                )
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var achievementsSection: some View {
-        InfoCard(
-            title: "Последние достижения",
-            subtitle: "Новое достижение разблокировано!",
-            icon: "trophy.fill",
-            value: "🏆",
-            style: .filled
-        ) {
-            // Achievements view
-        }
-    }
-    
-    @ViewBuilder
-    private var weatherWidget: some View {
-        VStack(spacing: Spacing.xs) {
-            Image(systemName: "sun.max.fill")
-                .font(.system(size: 24))
-                .foregroundColor(.orange)
-            
-            Text("22°")
-                .font(Typography.Title.large)
-                .fontWeight(.semibold)
-                .foregroundColor(ColorPalette.Text.primary)
-        }
-        .padding(Spacing.md)
-        .background(ColorPalette.Background.surface)
-        .cardCornerRadius()
-        .cardShadow()
-    }
-    
-    // MARK: - Computed Properties
-    
-    private var greetingText: String {
-        let hour = Calendar.current.component(.hour, from: currentTime)
-        switch hour {
-        case 6..<12:
-            return "Доброе утро!"
-        case 12..<17:
-            return "Добрый день!"
-        case 17..<22:
-            return "Добрый вечер!"
-        default:
-            return "Доброй ночи!"
-        }
-    }
-    
-    // MARK: - Methods
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "EEEE, d MMMM"
-        return formatter.string(from: date).capitalized
-    }
-    
-    @MainActor
-    private func refreshDashboardData() async {
-        // Имитация загрузки данных
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        currentTime = Date()
+        .navigationTitle("Обзор")
+        .navigationBarTitleDisplayMode(.large)
     }
 }
 
-// MARK: - Quick Actions Sheet
-struct QuickActionsSheet: View {
-    
-    @Environment(\.dismiss) private var dismiss
-    
+struct HabitsListView: View {
     var body: some View {
-        NavigationView {
-            ScrollView {
-                LazyVStack(spacing: Spacing.lg) {
-                    
-                    Text("Быстрые действия")
-                        .font(Typography.Headline.large)
-                        .foregroundColor(ColorPalette.Text.primary)
-                        .padding(.top, Spacing.lg)
-                    
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: Spacing.md) {
-                        
-                        quickActionButton("Новая привычка", icon: "plus.circle", color: ColorPalette.Habits.health) {
-                            NavigationManager.shared.navigate(to: .createHabit, in: .habits)
-                            dismiss()
-                        }
-                        
-                        quickActionButton("Новая задача", icon: "note.text.badge.plus", color: ColorPalette.Secondary.main) {
-                            NavigationManager.shared.navigate(to: .createTask, in: .tasks)
-                            dismiss()
-                        }
-                        
-                        quickActionButton("Добавить доход", icon: "plus.rectangle.on.rectangle", color: ColorPalette.Financial.income) {
-                            NavigationManager.shared.navigate(to: .addTransaction, in: .finance)
-                            dismiss()
-                        }
-                        
-                        quickActionButton("Записать расход", icon: "minus.rectangle", color: ColorPalette.Financial.expense) {
-                            NavigationManager.shared.navigate(to: .addTransaction, in: .finance)
-                            dismiss()
-                        }
-                        
-                        quickActionButton("Новая цель", icon: "target", color: ColorPalette.Primary.main) {
-                            NavigationManager.shared.navigate(to: .createGoal, in: .dashboard)
-                            dismiss()
-                        }
-                        
-                        quickActionButton("Настройки", icon: "gearshape", color: ColorPalette.Text.secondary) {
-                            NavigationManager.shared.selectedTab = .settings
-                            dismiss()
-                        }
-                    }
-                    .padding(.horizontal, Spacing.screenPadding)
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Готово") {
-                        dismiss()
-                    }
-                }
-            }
+        VStack {
+            Text("Привычки")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            Text("Список ваших привычек")
+                .foregroundColor(.secondary)
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-    }
-    
-    @ViewBuilder
-    private func quickActionButton(
-        _ title: String,
-        icon: String,
-        color: Color,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            VStack(spacing: Spacing.md) {
-                Image(systemName: icon)
-                    .font(.system(size: 32, weight: .medium))
-                    .foregroundColor(color)
-                
-                Text(title)
-                    .font(Typography.Body.medium)
-                    .fontWeight(.medium)
-                    .foregroundColor(ColorPalette.Text.primary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(height: 100)
-            .frame(maxWidth: .infinity)
-            .background(ColorPalette.Background.surface)
-            .cardCornerRadius()
-            .cardShadow()
-        }
-        .buttonStyle(PlainButtonStyle())
+        .navigationTitle("Привычки")
+        .navigationBarTitleDisplayMode(.large)
     }
 }
 
-// MARK: - Preview
-#if DEBUG
-#Preview("ContentView") {
+struct TasksAndGoalsView: View {
+    var body: some View {
+        VStack {
+            Text("Задачи и Цели")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            Text("Управление задачами и целями")
+                .foregroundColor(.secondary)
+        }
+        .navigationTitle("Задачи и Цели")
+        .navigationBarTitleDisplayMode(.large)
+    }
+}
+
+struct FinanceView: View {
+    var body: some View {
+        VStack {
+            Text("Финансы")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            Text("Управление финансами")
+                .foregroundColor(.secondary)
+        }
+        .navigationTitle("Финансы")
+        .navigationBarTitleDisplayMode(.large)
+    }
+}
+
+struct ProfileAndSettingsView: View {
+    var body: some View {
+        VStack {
+            Text("Профиль и Настройки")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+            Text("Настройки приложения")
+                .foregroundColor(.secondary)
+        }
+        .navigationTitle("Профиль")
+        .navigationBarTitleDisplayMode(.large)
+    }
+}
+
+// MARK: - Detail View Placeholders
+struct HabitDetailView: View {
+    let habitID: String
+    var body: some View {
+        Text("Детали привычки \(habitID)")
+    }
+}
+
+struct CreateHabitView: View {
+    var body: some View {
+        Text("Создание новой привычки")
+    }
+}
+
+struct EditHabitView: View {
+    let habitID: String
+    var body: some View {
+        Text("Редактирование привычки \(habitID)")
+    }
+}
+
+struct HabitStatisticsView: View {
+    let habitID: String
+    var body: some View {
+        Text("Статистика привычки \(habitID)")
+    }
+}
+
+struct TaskDetailView: View {
+    let taskID: String
+    var body: some View {
+        Text("Детали задачи \(taskID)")
+    }
+}
+
+struct CreateTaskView: View {
+    var body: some View {
+        Text("Создание новой задачи")
+    }
+}
+
+struct EditTaskView: View {
+    let taskID: String
+    var body: some View {
+        Text("Редактирование задачи \(taskID)")
+    }
+}
+
+struct ProjectView: View {
+    let projectID: String
+    var body: some View {
+        Text("Проект \(projectID)")
+    }
+}
+
+struct GoalDetailView: View {
+    let goalID: String
+    var body: some View {
+        Text("Детали цели \(goalID)")
+    }
+}
+
+struct CreateGoalView: View {
+    var body: some View {
+        Text("Создание новой цели")
+    }
+}
+
+struct EditGoalView: View {
+    let goalID: String
+    var body: some View {
+        Text("Редактирование цели \(goalID)")
+    }
+}
+
+struct TransactionDetailView: View {
+    let transactionID: String
+    var body: some View {
+        Text("Детали транзакции \(transactionID)")
+    }
+}
+
+struct AddTransactionView: View {
+    var body: some View {
+        Text("Добавление транзакции")
+    }
+}
+
+struct EditTransactionView: View {
+    let transactionID: String
+    var body: some View {
+        Text("Редактирование транзакции \(transactionID)")
+    }
+}
+
+struct BudgetManagementView: View {
+    var body: some View {
+        Text("Управление бюджетом")
+    }
+}
+
+struct FinancialReportsView: View {
+    var body: some View {
+        Text("Финансовые отчеты")
+    }
+}
+
+struct ProfileSettingsView: View {
+    var body: some View {
+        Text("Настройки профиля")
+    }
+}
+
+struct NotificationSettingsView: View {
+    var body: some View {
+        Text("Настройки уведомлений")
+    }
+}
+
+struct DataExportView: View {
+    var body: some View {
+        Text("Экспорт данных")
+    }
+}
+
+struct AboutView: View {
+    var body: some View {
+        Text("О приложении")
+    }
+}
+
+#Preview {
     ContentView()
-}
-
-#Preview("Dashboard") {
-    DashboardTabView()
-}
-
-#Preview("Quick Actions") {
-    QuickActionsSheet()
-}
-#endif 
+        .environment(NavigationManager.shared)
+} 
