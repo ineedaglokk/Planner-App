@@ -1,0 +1,312 @@
+name: iOS/macOS CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_15.2.app/Contents/Developer
+
+jobs:
+  # Статический анализ кода
+  lint:
+    name: SwiftLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SwiftLint
+        uses: norio-nomura/action-swiftlint@3.2.1
+        with:
+          args: --strict --config .swiftlint.yml
+
+  # Сборка и тестирование iOS
+  build-and-test-ios:
+    name: Build & Test iOS
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        destination: 
+          - 'platform=iOS Simulator,OS=17.2,name=iPhone 15 Pro'
+          - 'platform=iOS Simulator,OS=17.2,name=iPad Pro (12.9-inch) (6th generation)'
+        
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.2'
+
+      - name: Cache SPM packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: SwiftLint Check
+        run: swiftlint --config .swiftlint.yml
+
+      - name: Build iOS
+        run: |
+          xcodebuild clean build \
+            -workspace IWBB.xcworkspace \
+            -scheme IWBB \
+            -destination '${{ matrix.destination }}' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            | xcpretty
+
+      - name: Test iOS
+        run: |
+          xcodebuild test \
+            -workspace IWBB.xcworkspace \
+            -scheme IWBB \
+            -destination '${{ matrix.destination }}' \
+            -configuration Debug \
+            -enableCodeCoverage YES \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            -resultBundlePath TestResults.xcresult \
+            | xcpretty
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.destination }}
+          path: TestResults.xcresult
+          retention-days: 30
+
+  # Сборка и тестирование macOS
+  build-and-test-macos:
+    name: Build & Test macOS
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.2'
+
+      - name: Cache SPM packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Build macOS
+        run: |
+          xcodebuild clean build \
+            -workspace IWBB.xcworkspace \
+            -scheme IWBB \
+            -destination 'platform=macOS' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            | xcpretty
+
+      - name: Test macOS
+        run: |
+          xcodebuild test \
+            -workspace IWBB.xcworkspace \
+            -scheme IWBB \
+            -destination 'platform=macOS' \
+            -configuration Debug \
+            -enableCodeCoverage YES \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            -resultBundlePath TestResults-macOS.xcresult \
+            | xcpretty
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-macos
+          path: TestResults-macOS.xcresult
+          retention-days: 30
+
+  # Анализ покрытия кода
+  code-coverage:
+    name: Code Coverage
+    runs-on: macos-latest
+    needs: [build-and-test-ios]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.2'
+
+      - name: Download test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-*
+          merge-multiple: true
+
+      - name: Generate code coverage report
+        run: |
+          xcrun xccov view --report --json TestResults.xcresult > coverage.json
+          xcrun xccov view --report TestResults.xcresult
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: coverage.json
+          fail_ci_if_error: false
+          verbose: true
+
+  # Архивирование для релиза (только для main ветки)
+  archive-ios:
+    name: Archive iOS Release
+    runs-on: macos-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [lint, build-and-test-ios, build-and-test-macos]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '15.2'
+
+      - name: Cache SPM packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Archive iOS App
+        run: |
+          xcodebuild clean archive \
+            -workspace IWBB.xcworkspace \
+            -scheme IWBB \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath './build/IWBB-iOS.xcarchive' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM="" \
+            | xcpretty
+
+      - name: Export IPA
+        run: |
+          mkdir -p ./build/ipa
+          xcodebuild -exportArchive \
+            -archivePath './build/IWBB-iOS.xcarchive' \
+            -exportOptionsPlist './ExportOptions.plist' \
+            -exportPath './build/ipa' \
+            | xcpretty
+
+      - name: Upload iOS Archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: IWBB-iOS-Archive
+          path: |
+            ./build/IWBB-iOS.xcarchive
+            ./build/ipa
+          retention-days: 90
+
+  # Архивирование macOS приложения
+  archive-macos:
+    name: Archive macOS Release
+    runs-on: macos-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [lint, build-and-test-ios, build-and-test-macos]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: actions/xcode-select@v1
+        with:
+          xcode-version: '15.2'
+
+      - name: Archive macOS App
+        run: |
+          xcodebuild clean archive \
+            -workspace IWBB.xcworkspace \
+            -scheme IWBB \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            -archivePath './build/IWBB-macOS.xcarchive' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            DEVELOPMENT_TEAM="" \
+            | xcpretty
+
+      - name: Upload macOS Archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: IWBB-macOS-Archive
+          path: ./build/IWBB-macOS.xcarchive
+          retention-days: 90
+
+  # Безопасность и качество кода
+  security-scan:
+    name: Security & Quality Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: swift
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif' 

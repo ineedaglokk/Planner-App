@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- CloudKit -->
+	<key>com.apple.developer.icloud-container-identifiers</key>
+	<array>
+		<string>iCloud.com.iwbb.app</string>
+	</array>
+	<key>com.apple.developer.icloud-services</key>
+	<array>
+		<string>CloudKit</string>
+		<string>CloudDocuments</string>
+	</array>
+	<key>com.apple.developer.ubiquity-container-identifiers</key>
+	<array>
+		<string>iCloud.com.iwbb.app</string>
+	</array>
+	
+	<!-- HealthKit -->
+	<key>com.apple.developer.healthkit</key>
+	<true/>
+	<key>com.apple.developer.healthkit.background-delivery</key>
+	<true/>
+	
+	<!-- App Groups (for sharing data with widgets/extensions) -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.iwbb.app</string>
+	</array>
+	
+	<!-- Push Notifications -->
+	<key>aps-environment</key>
+	<string>development</string>
+	<!-- For production: <string>production</string> -->
+	
+	<!-- Background Modes -->
+	<key>com.apple.developer.background-modes</key>
+	<array>
+		<string>background-app-refresh</string>
+		<string>background-processing</string>
+		<string>remote-notification</string>
+	</array>
+	
+	<!-- User Notifications -->
+	<key>com.apple.developer.usernotifications.time-sensitive</key>
+	<true/>
+	<key>com.apple.developer.usernotifications.critical-alerts</key>
+	<false/>
+	
+	<!-- App Intents -->
+	<key>com.apple.developer.siri</key>
+	<true/>
+	<key>com.apple.developer.usernotifications.filtering</key>
+	<true/>
+	
+	<!-- Widget Extension -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:iwbb.app</string>
+	</array>
+	
+	<!-- Keychain Access -->
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.iwbb.app</string>
+	</array>
+	
+	<!-- Network -->
+	<key>com.apple.developer.networking.multicast</key>
+	<false/>
+	<key>com.apple.developer.networking.wifi-info</key>
+	<false/>
+	
+	<!-- Game Center (if implementing gamification) -->
+	<key>com.apple.developer.game-center</key>
+	<false/>
+	
+	<!-- In-App Purchases (if implementing premium features) -->
+	<key>com.apple.developer.in-app-payments</key>
+	<false/>
+	
+	<!-- File Provider (for document management) -->
+	<key>com.apple.developer.fileprovider.testing-mode</key>
+	<false/>
+	
+	<!-- Core ML (for AI features) -->
+	<key>com.apple.developer.coreml.domain.ondevice</key>
+	<true/>
+	
+	<!-- macOS Specific Entitlements -->
+	<!-- Sandbox -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	
+	<!-- File Access (for import/export) -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<key>com.apple.security.files.downloads.read-write</key>
+	<true/>
+	
+	<!-- Calendar and Contacts -->
+	<key>com.apple.security.personal-information.calendars</key>
+	<true/>
+	<key>com.apple.security.personal-information.addressbook</key>
+	<false/>
+	
+	<!-- Camera and Microphone -->
+	<key>com.apple.security.device.camera</key>
+	<true/>
+	<key>com.apple.security.device.microphone</key>
+	<false/>
+	
+	<!-- Location -->
+	<key>com.apple.security.personal-information.location</key>
+	<true/>
+	
+	<!-- Network -->
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
+	<false/>
+	
+	<!-- Printing -->
+	<key>com.apple.security.print</key>
+	<false/>
+	
+	<!-- Photos Library -->
+	<key>com.apple.security.personal-information.photos-library</key>
+	<true/>
+	
+	<!-- Apple Events (for automation) -->
+	<key>com.apple.security.automation.apple-events</key>
+	<false/>
+	
+	<!-- JIT Compilation -->
+	<key>com.apple.security.cs.allow-jit</key>
+	<false/>
+	
+	<!-- Unsigned Executable Memory -->
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<false/>
+	
+	<!-- Disable Library Validation -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<false/>
+	
+	<!-- Hardware Exceptions -->
+	<key>com.apple.security.cs.disable-executable-page-protection</key>
+	<false/>
+	
+	<!-- Debugging -->
+	<key>com.apple.security.cs.debugger</key>
+	<false/>
+	
+	<!-- Inherit -->
+	<key>com.apple.security.inherit</key>
+	<false/>
+	
+	<!-- Temporary Exception (only for development) -->
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
+	<array>
+		<!-- Only for development builds -->
+		<!-- <string>Desktop/</string> -->
+		<!-- <string>Documents/</string> -->
+	</array>
+	
+	<!-- App Capabilities (iOS 16+) -->
+	<key>com.apple.developer.shared-with-you</key>
+	<false/>
+	
+	<!-- Live Activities (iOS 16+) -->
+	<key>com.apple.developer.live-activities</key>
+	<false/>
+	
+	<!-- Screen Time API -->
+	<key>com.apple.developer.family-controls</key>
+	<false/>
+	
+	<!-- WeatherKit -->
+	<key>com.apple.developer.weatherkit</key>
+	<false/>
+	
+	<!-- MapKit -->
+	<key>com.apple.developer.maps</key>
+	<false/>
+	
+	<!-- Pass Type IDs (for Wallet integration) -->
+	<key>com.apple.developer.pass-type-identifiers</key>
+	<array>
+		<!-- <string>pass.com.iwbb.app</string> -->
+	</array>
+	
+	<!-- ClassKit (for education features) -->
+	<key>com.apple.developer.ClassKit-environment</key>
+	<string>development</string>
+	<!-- For production: <string>production</string> -->
+	
+	<!-- DeviceCheck -->
+	<key>com.apple.developer.devicecheck.appattest-environment</key>
+	<string>development</string>
+	<!-- For production: <string>production</string> -->
+	
+	<!-- Group Activities -->
+	<key>com.apple.developer.group-session</key>
+	<false/>
+	
+	<!-- ShazamKit -->
+	<key>com.apple.developer.shazamkit</key>
+	<false/>
+	
+	<!-- Apple Pay -->
+	<key>com.apple.developer.in-app-payments</key>
+	<false/>
+	<key>com.apple.developer.payment-pass-provisioning</key>
+	<false/>
+	
+	<!-- NFC -->
+	<key>com.apple.developer.nfc.readersession.formats</key>
+	<array>
+		<!-- <string>NDEF</string> -->
+		<!-- <string>TAG</string> -->
+	</array>
+</dict>
+</plist> 

@@ -1,0 +1,293 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:ios)
+
+# Константы
+SCHEME = "IWBB"
+WORKSPACE = "IWBB.xcworkspace"
+PROJECT = "IWBB/IWBB.xcodeproj"
+
+platform :ios do
+
+  # Получение информации о проекте
+  before_all do
+    ensure_env_vars(
+      env_vars: ['FASTLANE_USER', 'FASTLANE_PASSWORD']
+    ) if is_ci
+    
+    puts "🚀 Начинаем работу с проектом #{SCHEME}"
+    puts "📱 Платформа: iOS"
+    puts "🔧 Workspace: #{WORKSPACE}"
+  end
+
+  # Очистка build директории
+  desc "Очистить build директорию"
+  lane :clean do
+    clear_derived_data
+    clean_build_artifacts_and_derived_data
+  end
+
+  # Установка зависимостей
+  desc "Установить зависимости"
+  lane :bootstrap do
+    # SPM packages resolve
+    sh("cd .. && xcodebuild -resolvePackageDependencies -workspace #{WORKSPACE} -scheme #{SCHEME}")
+    
+    # SwiftLint установка если нет
+    begin
+      sh("which swiftlint")
+    rescue
+      sh("brew install swiftlint")
+    end
+    
+    puts "✅ Зависимости установлены"
+  end
+
+  # Линтинг кода
+  desc "Запустить SwiftLint проверку"
+  lane :lint do
+    swiftlint(
+      mode: :lint,
+      config_file: ".swiftlint.yml",
+      strict: true,
+      raise_if_swiftlint_error: true
+    )
+  end
+
+  # Тестирование
+  desc "Запустить все тесты"
+  lane :test do
+    run_tests(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      devices: ["iPhone 15 Pro", "iPad Pro (12.9-inch) (6th generation)"],
+      clean: true,
+      code_coverage: true,
+      derived_data_path: "./build/DerivedData",
+      result_bundle: true,
+      output_directory: "./build/test_output"
+    )
+  end
+
+  # Быстрая проверка (lint + test)
+  desc "Быстрая проверка: lint + test"
+  lane :check do
+    lint
+    test
+    puts "✅ Быстрая проверка пройдена"
+  end
+
+  # Сборка для отладки
+  desc "Сборка Debug версии"
+  lane :build_debug do
+    gym(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      configuration: "Debug",
+      build_path: "./build",
+      archive_path: "./build/IWBB-Debug.xcarchive",
+      export_method: "development",
+      skip_package_ipa: true,
+      clean: true
+    )
+  end
+
+  # Сборка для релиза
+  desc "Сборка Release версии"
+  lane :build_release do
+    ensure_git_status_clean unless skip_git_status_check
+    
+    gym(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      configuration: "Release",
+      build_path: "./build",
+      archive_path: "./build/IWBB-Release.xcarchive",
+      export_method: "app-store",
+      clean: true,
+      include_bitcode: false,
+      include_symbols: true,
+      export_options: {
+        stripSwiftSymbols: true,
+        uploadBitcode: false,
+        uploadSymbols: true,
+        compileBitcode: false
+      }
+    )
+  end
+
+  # Увеличение версии
+  desc "Увеличить версию приложения"
+  lane :bump_version do |options|
+    bump_type = options[:type] || "patch" # patch, minor, major
+    
+    case bump_type
+    when "major"
+      increment_version_number(bump_type: "major")
+    when "minor"
+      increment_version_number(bump_type: "minor")
+    else
+      increment_version_number(bump_type: "patch")
+    end
+    
+    increment_build_number
+    
+    version = get_version_number
+    build = get_build_number
+    
+    puts "📈 Версия обновлена: #{version} (#{build})"
+    
+    # Коммит изменений версии
+    git_add(path: PROJECT)
+    git_commit(
+      path: PROJECT,
+      message: "chore: обновление версии до #{version} (#{build})"
+    )
+    
+    add_git_tag(tag: "v#{version}-#{build}")
+  end
+
+  # Подготовка к релизу
+  desc "Подготовка к релизу"
+  lane :prepare_release do |options|
+    ensure_git_branch(branch: 'main')
+    ensure_git_status_clean
+    
+    # Проверки
+    lint
+    test
+    
+    # Обновление версии
+    bump_version(type: options[:type])
+    
+    # Сборка
+    build_release
+    
+    puts "🎉 Релиз подготовлен!"
+    puts "💡 Следующие шаги:"
+    puts "   1. git push origin main --tags"
+    puts "   2. Создать Release на GitHub"
+  end
+
+  # CI сборка
+  desc "CI сборка"
+  lane :ci_build do
+    setup_ci if is_ci
+    
+    clean
+    bootstrap
+    lint
+    test
+    build_debug
+    
+    puts "✅ CI сборка завершена"
+  end
+
+  # Генерация скриншотов
+  desc "Генерация скриншотов для App Store"
+  lane :screenshots do
+    capture_screenshots(
+      workspace: WORKSPACE,
+      scheme: SCHEME
+    )
+  end
+
+  # Отчет о покрытии кода
+  desc "Генерация отчета о покрытии кода"
+  lane :coverage do
+    run_tests(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      code_coverage: true,
+      derived_data_path: "./build/DerivedData"
+    )
+    
+    # Генерация отчета
+    sh("cd .. && xcrun xccov view --report ./build/DerivedData/Logs/Test/*.xcresult")
+  end
+
+  # После выполнения
+  after_all do |lane|
+    puts "✅ Lane '#{lane}' завершен успешно"
+    
+    # Отправка уведомления в Slack (если настроен)
+    # slack(
+    #   message: "iOS Build завершен для lane: #{lane}",
+    #   success: true
+    # ) if ENV['SLACK_URL']
+  end
+
+  # Обработка ошибок
+  error do |lane, exception|
+    puts "❌ Ошибка в lane '#{lane}': #{exception.message}"
+    
+    # Отправка уведомления об ошибке (если настроен)
+    # slack(
+    #   message: "iOS Build failed for lane: #{lane}. Error: #{exception.message}",
+    #   success: false
+    # ) if ENV['SLACK_URL']
+  end
+end
+
+platform :mac do
+  
+  # macOS сборка для отладки
+  desc "Сборка macOS Debug версии"
+  lane :build_debug do
+    gym(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      configuration: "Debug",
+      destination: "generic/platform=macOS",
+      build_path: "./build",
+      archive_path: "./build/IWBB-macOS-Debug.xcarchive",
+      skip_package_ipa: true,
+      clean: true
+    )
+  end
+
+  # macOS сборка для релиза
+  desc "Сборка macOS Release версии"
+  lane :build_release do
+    gym(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      configuration: "Release",
+      destination: "generic/platform=macOS",
+      build_path: "./build",
+      archive_path: "./build/IWBB-macOS-Release.xcarchive",
+      clean: true
+    )
+  end
+
+  # macOS тестирование
+  desc "Запустить macOS тесты"
+  lane :test do
+    run_tests(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      destination: "platform=macOS",
+      clean: true,
+      code_coverage: true
+    )
+  end
+
+end
+
+# Вспомогательные функции
+def skip_git_status_check
+  ENV['SKIP_GIT_STATUS_CHECK'] == 'true'
+end 

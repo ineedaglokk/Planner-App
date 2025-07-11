@@ -1,0 +1,73 @@
+# Auto normalize line endings for all text-based files
+* text=auto
+
+# Xcode project files
+*.pbxproj text merge=union
+*.xcworkspacedata text merge=union
+*.xccurrentversion text merge=union
+
+# Swift source files
+*.swift text diff=swift
+
+# Plist files
+*.plist text
+
+# Text files
+*.txt text
+*.md text
+*.json text
+*.yml text
+*.yaml text
+
+# Shell scripts (always use LF)
+*.sh text eol=lf
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Videos
+*.mp4 binary
+*.mov binary
+
+# Audio
+*.mp3 binary
+*.wav binary
+*.m4a binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.gz binary
+
+# Xcode files
+*.xcarchive binary
+*.ipa binary
+*.dSYM binary
+
+# Swift Package Manager
+Package.swift text
+Package.resolved text
+
+# Ruby files
+*.rb text
+Gemfile text
+Fastfile text
+
+# Documentation
+README.md text
+CHANGELOG.md text
+CONTRIBUTING.md text
+LICENSE text
+
+# Configuration files
+.gitignore text
+.gitattributes text
+.swiftlint.yml text
+
+# GitHub files
+.github/**/* text 

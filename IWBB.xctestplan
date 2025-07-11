@@ -1,0 +1,98 @@
+{
+  "configurations" : [
+    {
+      "id" : "D8B91F28-63AC-4B8B-9D85-B2E3C4F5F6A7",
+      "name" : "Configuration 1",
+      "options" : {
+        "environmentVariableEntries" : [
+          {
+            "key" : "IWBB_TEST",
+            "value" : "1"
+          }
+        ],
+        "targetForVariableExpansion" : {
+          "containerPath" : "container:Package.swift",
+          "identifier" : "IWBB",
+          "name" : "IWBB"
+        }
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:Package.swift",
+          "identifier" : "IWBBCore",
+          "name" : "IWBBCore"
+        },
+        {
+          "containerPath" : "container:Package.swift",
+          "identifier" : "DataLayer",
+          "name" : "DataLayer"
+        },
+        {
+          "containerPath" : "container:Package.swift",
+          "identifier" : "HabitsFeature",
+          "name" : "HabitsFeature"
+        },
+        {
+          "containerPath" : "container:Package.swift",
+          "identifier" : "TasksFeature",
+          "name" : "TasksFeature"
+        },
+        {
+          "containerPath" : "container:Package.swift",
+          "identifier" : "FinanceFeature",
+          "name" : "FinanceFeature"
+        }
+      ]
+    },
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:Package.swift",
+        "identifier" : "IWBBCoreTests",
+        "name" : "IWBBCoreTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Package.swift",
+        "identifier" : "DataLayerTests",
+        "name" : "DataLayerTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Package.swift",
+        "identifier" : "HabitsFeatureTests",
+        "name" : "HabitsFeatureTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Package.swift",
+        "identifier" : "TasksFeatureTests",
+        "name" : "TasksFeatureTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Package.swift",
+        "identifier" : "FinanceFeatureTests",
+        "name" : "FinanceFeatureTests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:Package.swift",
+        "identifier" : "SharedUtilitiesTests",
+        "name" : "SharedUtilitiesTests"
+      }
+    }
+  ],
+  "version" : 1
+} 

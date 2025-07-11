@@ -1,0 +1,23 @@
+# app_identifier("[[APP_IDENTIFIER]]") # The bundle identifier of your app
+# apple_id("[[APPLE_ID]]") # Your Apple email address
+
+app_identifier("com.plannerapp.iwbb") # Placeholder - изменить на реальный bundle ID
+# apple_id("your-email@example.com") # Раскомментировать когда будет Apple Developer account
+
+# Для получения Team ID выполните: fastlane sigh --username your-email@example.com
+# team_id("[[TEAM_ID]]") # Developer Portal Team ID
+
+# team_name("[[TEAM_NAME]]") # Developer Portal Team Name
+
+# Настройки для iTunes Connect / App Store Connect
+# itc_team_id("[[ITC_TEAM_ID]]") # App Store Connect Team ID
+# itc_team_name("[[ITC_TEAM_NAME]]") # App Store Connect Team Name
+
+# Настройки по умолчанию для всех lanes
+for_platform :ios do
+  # platform-specific configuration
+end
+
+for_platform :mac do
+  # platform-specific configuration  
+end 

@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Information -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>ru</string>
+	<key>CFBundleDisplayName</key>
+	<string>IWBB</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	
+	<!-- App Category -->
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	
+	<!-- iOS Specific -->
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<true/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
+	
+	<!-- Launch Screen -->
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIImageName</key>
+		<string>LaunchImage</string>
+	</dict>
+	
+	<!-- Status Bar -->
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleDefault</string>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+	
+	<!-- Supported Interface Orientations -->
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	
+	<!-- Device Support -->
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer> <!-- iPhone -->
+		<integer>2</integer> <!-- iPad -->
+	</array>
+	
+	<!-- Minimum OS Versions -->
+	<key>MinimumOSVersion</key>
+	<string>17.0</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	
+	<!-- Required Device Capabilities -->
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	
+	<!-- Background Modes -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>background-app-refresh</string>
+		<string>background-processing</string>
+	</array>
+	
+	<!-- App Transport Security -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>icloud.com</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSExceptionMinimumTLSVersion</key>
+				<string>TLSv1.0</string>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	
+	<!-- Privacy Permissions -->
+	<!-- HealthKit -->
+	<key>NSHealthShareUsageDescription</key>
+	<string>IWBB хочет получить доступ к данным о здоровье для отслеживания активности и привычек, связанных со здоровьем.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>IWBB хочет записывать данные о здоровье для отслеживания прогресса ваших здоровых привычек.</string>
+	
+	<!-- User Notifications -->
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>IWBB использует уведомления для напоминаний о привычках, задачах и важных событиях.</string>
+	
+	<!-- Calendar -->
+	<key>NSCalendarsUsageDescription</key>
+	<string>IWBB может синхронизировать ваши задачи с календарем для лучшего планирования.</string>
+	
+	<!-- Reminders -->
+	<key>NSRemindersUsageDescription</key>
+	<string>IWBB может создавать напоминания для ваших задач и целей.</string>
+	
+	<!-- Camera (for avatar/documents) -->
+	<key>NSCameraUsageDescription</key>
+	<string>IWBB может использовать камеру для добавления фотографий к записям или установки аватара.</string>
+	
+	<!-- Photo Library -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>IWBB может получить доступ к фото для добавления изображений к записям или установки аватара.</string>
+	
+	<!-- Face ID / Touch ID -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>IWBB использует Face ID для безопасного доступа к приложению и защиты ваших данных.</string>
+	
+	<!-- Network -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>IWBB может использовать локальную сеть для синхронизации данных между устройствами.</string>
+	
+	<!-- Location (for location-based reminders) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>IWBB может использовать геолокацию для создания напоминаний, привязанных к местам.</string>
+	
+	<!-- URL Schemes -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.iwbb.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>iwbb</string>
+			</array>
+		</dict>
+	</array>
+	
+	<!-- Document Types -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>IWBB Backup</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.iwbb.backup</string>
+			</array>
+		</dict>
+	</array>
+	
+	<!-- Exported UTIs -->
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.iwbb.backup</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>IWBB Backup File</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>iwbb</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+	
+	<!-- Spotlight Search -->
+	<key>CoreSpotlightContinuation</key>
+	<true/>
+	
+	<!-- Shortcuts -->
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.iwbb.app.create-habit</string>
+		<string>com.iwbb.app.create-task</string>
+		<string>com.iwbb.app.add-transaction</string>
+		<string>com.iwbb.app.check-habit</string>
+	</array>
+	
+	<!-- Intent Definitions -->
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
+	
+	<!-- macOS Specific -->
+	<key>LSUIElement</key>
+	<false/>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	
+	<!-- App Sandbox (for Mac App Store) -->
+	<key>NSAppSandbox</key>
+	<true/>
+	
+	<!-- Menu Bar Extra (if needed) -->
+	<key>LSBackgroundOnly</key>
+	<false/>
+	
+	<!-- System Extensions -->
+	<key>NSSystemExtensionUsageDescription</key>
+	<string>IWBB может использовать системные расширения для улучшения функциональности.</string>
+</dict>
+</plist> 
