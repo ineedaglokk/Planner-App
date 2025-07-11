@@ -17,6 +17,14 @@ protocol ServiceContainerProtocol {
     var categoryService: CategoryServiceProtocol { get }
     var currencyService: CurrencyServiceProtocol { get }
     
+    // Advanced Tasks & Goals Services
+    var projectManagementService: ProjectManagementServiceProtocol { get }
+    var timeBlockingService: TimeBlockingServiceProtocol { get }
+    var templateService: TemplateServiceProtocol { get }
+    
+    // Integration Services
+    var eventKitIntegrationService: EventKitIntegrationServiceProtocol { get }
+    
     func initializeAllServices() async throws
     func cleanupAllServices() async
 }
@@ -42,6 +50,14 @@ final class ServiceContainer: ServiceContainerProtocol {
     private var _financeService: FinanceServiceProtocol?
     private var _categoryService: CategoryServiceProtocol?
     private var _currencyService: CurrencyServiceProtocol?
+    
+    // Advanced Services
+    private var _projectManagementService: ProjectManagementServiceProtocol?
+    private var _timeBlockingService: TimeBlockingServiceProtocol?
+    private var _templateService: TemplateServiceProtocol?
+    
+    // Integration Services
+    private var _eventKitIntegrationService: EventKitIntegrationServiceProtocol?
     
     // Service initialization queue
     private let serviceQueue = DispatchQueue(label: "com.plannerapp.services", qos: .userInitiated)
@@ -265,6 +281,95 @@ final class ServiceContainer: ServiceContainerProtocol {
         return service
     }
     
+    // MARK: - Advanced Services Access Properties
+    
+    var projectManagementService: ProjectManagementServiceProtocol {
+        if let service = _projectManagementService {
+            return service
+        }
+        
+        let service = ProjectManagementService(
+            dataService: dataService,
+            notificationService: notificationService,
+            templateService: templateService
+        )
+        _projectManagementService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var timeBlockingService: TimeBlockingServiceProtocol {
+        if let service = _timeBlockingService {
+            return service
+        }
+        
+        let calendarService = SimpleCalendarService()
+        let service = TimeBlockingService(
+            dataService: dataService,
+            calendarService: calendarService,
+            notificationService: notificationService
+        )
+        _timeBlockingService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    var templateService: TemplateServiceProtocol {
+        if let service = _templateService {
+            return service
+        }
+        
+        let analyticsService = SimpleAnalyticsService()
+        let service = TemplateService(
+            dataService: dataService,
+            cloudService: nil,
+            analyticsService: analyticsService
+        )
+        _templateService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
+    // MARK: - Integration Services Access Properties
+    
+    var eventKitIntegrationService: EventKitIntegrationServiceProtocol {
+        if let service = _eventKitIntegrationService {
+            return service
+        }
+        
+        let service = EventKitIntegrationService(
+            dataService: dataService,
+            userDefaultsService: userDefaultsService
+        )
+        _eventKitIntegrationService = service
+        
+        if isInitialized {
+            Task {
+                try? await service.initialize()
+            }
+        }
+        
+        return service
+    }
+    
     // MARK: - Service Lifecycle
     
     func initializeAllServices() async throws {
@@ -303,6 +408,9 @@ final class ServiceContainer: ServiceContainerProtocol {
             // 7. Finance Services after all dependencies
             try await initializeFinanceServices()
             
+            // 8. Advanced Services after all dependencies
+            try await initializeAdvancedServices()
+            
             // Настраиваем связи между сервисами
             setupServiceDependencies()
             
@@ -329,6 +437,18 @@ final class ServiceContainer: ServiceContainerProtocol {
         #endif
         
         // Очищаем сервисы в обратном порядке инициализации
+        if let templateService = _templateService {
+            await templateService.cleanup()
+        }
+        
+        if let timeBlockingService = _timeBlockingService {
+            await timeBlockingService.cleanup()
+        }
+        
+        if let projectManagementService = _projectManagementService {
+            await projectManagementService.cleanup()
+        }
+        
         if let taskService = _taskService {
             await taskService.cleanup()
         }
@@ -381,6 +501,9 @@ final class ServiceContainer: ServiceContainerProtocol {
         _financeService = nil
         _categoryService = nil
         _currencyService = nil
+        _projectManagementService = nil
+        _timeBlockingService = nil
+        _templateService = nil
         
         isInitialized = false
         
@@ -414,6 +537,20 @@ final class ServiceContainer: ServiceContainerProtocol {
         #endif
     }
     
+    private func initializeAdvancedServices() async throws {
+        #if DEBUG
+        print("Initializing Advanced Services...")
+        #endif
+        
+        try await projectManagementService.initialize()
+        try await timeBlockingService.initialize()
+        try await templateService.initialize()
+        
+        #if DEBUG
+        print("Advanced Services initialized successfully")
+        #endif
+    }
+    
     private func setupServiceDependencies() {
         // Настраиваем ErrorHandlingService как презентационный делегат
         // для отображения ошибок (это будет реализовано на уровне UI)
@@ -442,7 +579,10 @@ extension ServiceContainer {
                (_transactionRepository?.isInitialized ?? false) &&
                (_financeService?.isInitialized ?? false) &&
                (_categoryService?.isInitialized ?? false) &&
-               (_currencyService?.isInitialized ?? false)
+               (_currencyService?.isInitialized ?? false) &&
+               (_projectManagementService?.isInitialized ?? false) &&
+               (_timeBlockingService?.isInitialized ?? false) &&
+               (_templateService?.isInitialized ?? false)
     }
     
     /// Возвращает статус каждого сервиса
@@ -457,7 +597,10 @@ extension ServiceContainer {
             "TransactionRepository": _transactionRepository?.isInitialized ?? false,
             "FinanceService": _financeService?.isInitialized ?? false,
             "CategoryService": _categoryService?.isInitialized ?? false,
-            "CurrencyService": _currencyService?.isInitialized ?? false
+            "CurrencyService": _currencyService?.isInitialized ?? false,
+            "ProjectManagementService": _projectManagementService?.isInitialized ?? false,
+            "TimeBlockingService": _timeBlockingService?.isInitialized ?? false,
+            "TemplateService": _templateService?.isInitialized ?? false
         ]
     }
     
@@ -520,6 +663,24 @@ extension ServiceContainer {
             
         case is CurrencyServiceProtocol.Type:
             if let service = _currencyService {
+                await service.cleanup()
+                try await service.initialize()
+            }
+            
+        case is ProjectManagementServiceProtocol.Type:
+            if let service = _projectManagementService {
+                await service.cleanup()
+                try await service.initialize()
+            }
+            
+        case is TimeBlockingServiceProtocol.Type:
+            if let service = _timeBlockingService {
+                await service.cleanup()
+                try await service.initialize()
+            }
+            
+        case is TemplateServiceProtocol.Type:
+            if let service = _templateService {
                 await service.cleanup()
                 try await service.initialize()
             }
@@ -639,6 +800,11 @@ final class MockServiceContainer: ServiceContainer {
         _financeService = MockFinanceService()
         _categoryService = MockCategoryService()
         _currencyService = MockCurrencyService()
+
+        // Mock Advanced Services
+        _projectManagementService = MockProjectManagementService()
+        _timeBlockingService = MockTimeBlockingService()
+        _templateService = MockTemplateService()
     }
     
     convenience init() {
@@ -1022,4 +1188,221 @@ private final class MockCurrencyService: CurrencyServiceProtocol {
     func subscribeToRateUpdates(for currency: String) async throws { }
     func unsubscribeFromRateUpdates(for currency: String) async throws { }
     func getSignificantRateChanges() async throws -> [RateChange] { return [] }
+}
+
+// MARK: - Mock Advanced Services
+
+// Mock ProjectManagementService
+private final class MockProjectManagementService: ProjectManagementServiceProtocol {
+    var isInitialized: Bool = true
+    
+    func initialize() async throws { }
+    func cleanup() async { }
+    
+    func createProject(from template: ProjectTemplate?) async throws -> Project {
+        return Project(name: "Mock Project", description: "Mock description")
+    }
+    func getProject(by id: UUID) async throws -> Project? { return nil }
+    func getAllProjects() async throws -> [Project] { return [] }
+    func getActiveProjects() async throws -> [Project] { return [] }
+    func updateProject(_ project: Project) async throws { }
+    func deleteProject(_ project: Project) async throws { }
+    func archiveProject(_ project: Project) async throws { }
+    
+    func updateProjectProgress(_ project: Project) async throws { }
+    func calculateProjectCompletion(_ project: Project) async -> Double { return 0.0 }
+    func calculateProjectEffort(_ project: Project) async -> (estimated: TimeInterval?, actual: TimeInterval?) {
+        return (estimated: nil, actual: nil)
+    }
+    
+    func addDependency(from: Project, to: Project) async throws { }
+    func removeDependency(from: Project, to: Project) async throws { }
+    func validateDependencies(_ project: Project) async throws -> [DependencyConflict] { return [] }
+    func getProjectSchedule(_ project: Project) async throws -> [ScheduleItem] { return [] }
+    func resolveScheduleConflicts(_ conflicts: [ScheduleConflict]) async throws -> [ScheduleResolution] { return [] }
+    
+    func applyTemplate(_ template: ProjectTemplate, to project: Project) async throws { }
+    func createTemplateFromProject(_ project: Project, name: String, isPublic: Bool) async throws -> ProjectTemplate {
+        return ProjectTemplate(name: name, category: .planning)
+    }
+    func getAllTemplates() async throws -> [ProjectTemplate] { return [] }
+    func getRecommendedTemplates(for category: TemplateCategory?) async throws -> [ProjectTemplate] { return [] }
+    
+    func getProjectMetrics(_ project: Project) async throws -> ProjectMetrics {
+        return ProjectMetrics(project: project, completionRate: 0.0, timeUtilization: 0.0, taskVelocity: 0.0)
+    }
+    func getProjectInsights(_ project: Project) async throws -> [ProjectInsight] { return [] }
+    func predictProjectCompletion(_ project: Project) async throws -> ProjectPrediction {
+        return ProjectPrediction(project: project, estimatedCompletionDate: Date(), confidence: 0.0)
+    }
+    
+    func bulkUpdateProjects(_ projects: [Project], operation: ProjectBulkOperation) async throws { }
+    func exportProject(_ project: Project) async throws -> ProjectExportData {
+        return ProjectExportData(project: [:], metadata: [:])
+    }
+    func importProject(from data: ProjectExportData) async throws -> Project {
+        return Project(name: "Imported Project", description: "Imported description")
+    }
+}
+
+// MARK: - Simple Calendar Service Protocol and Implementation
+
+protocol CalendarIntegrationServiceProtocol: ServiceProtocol {
+    // Простая заглушка для календарной интеграции
+}
+
+// Простая реализация календарного сервиса
+final class SimpleCalendarService: CalendarIntegrationServiceProtocol {
+    var isInitialized: Bool = false
+    
+    func initialize() async throws {
+        isInitialized = true
+    }
+    
+    func cleanup() async {
+        isInitialized = false
+    }
+}
+
+// Mock TimeBlockingService
+private final class MockTimeBlockingService: TimeBlockingServiceProtocol {
+    var isInitialized: Bool = true
+    
+    func initialize() async throws { }
+    func cleanup() async { }
+    
+    func createTimeBlock(for task: ProjectTask?, duration: TimeInterval, preferredDate: Date?) async throws -> TimeBlock {
+        return TimeBlock(title: "Mock Block", startDate: Date(), endDate: Date().addingTimeInterval(duration))
+    }
+    func createTimeBlock(for project: Project?, duration: TimeInterval, preferredDate: Date?) async throws -> TimeBlock {
+        return TimeBlock(title: "Mock Project Block", startDate: Date(), endDate: Date().addingTimeInterval(duration))
+    }
+    func getTimeBlock(by id: UUID) async throws -> TimeBlock? { return nil }
+    func getTimeBlocks(for date: Date) async throws -> [TimeBlock] { return [] }
+    func getTimeBlocks(for dateRange: DateInterval) async throws -> [TimeBlock] { return [] }
+    func updateTimeBlock(_ timeBlock: TimeBlock) async throws { }
+    func deleteTimeBlock(_ timeBlock: TimeBlock) async throws { }
+    
+    func suggestOptimalTimeSlots(for task: ProjectTask) async throws -> [TimeSlot] { return [] }
+    func suggestOptimalTimeSlots(duration: TimeInterval, energyLevel: EnergyLevel?, timeOfDay: TimeOfDay?) async throws -> [TimeSlot] { return [] }
+    func rescheduleTimeBlock(_ timeBlock: TimeBlock, to newDate: Date) async throws { }
+    func optimizeSchedule(for date: Date) async throws -> [ScheduleOptimization] { return [] }
+    func findFreeTimeSlots(for date: Date, duration: TimeInterval) async throws -> [TimeSlot] { return [] }
+    
+    func syncWithCalendar() async throws { }
+    func createCalendarEvent(for timeBlock: TimeBlock) async throws { }
+    func updateCalendarEvent(for timeBlock: TimeBlock) async throws { }
+    func deleteCalendarEvent(for timeBlock: TimeBlock) async throws { }
+    func handleCalendarEventUpdate(_ eventID: String) async throws { }
+    func importCalendarEvents(from calendarIdentifier: String) async throws -> [TimeBlock] { return [] }
+    
+    func calculateWorkload(for date: Date) async throws -> WorkloadInfo {
+        return WorkloadInfo(date: date, totalTime: 0, scheduledTime: 0, freeTime: 0, utilizationRate: 0.0)
+    }
+    func calculateWorkload(for week: Date) async throws -> [WorkloadInfo] { return [] }
+    func suggestWorkloadDistribution(for week: Date) async throws -> [WorkloadSuggestion] { return [] }
+    func getWorkloadTrends(for period: DateInterval) async throws -> WorkloadTrends {
+        return WorkloadTrends(period: period, averageUtilization: 0.0, peakDays: [], lightDays: [])
+    }
+    
+    func getTimeBlockAnalytics(for period: DateInterval) async throws -> TimeBlockAnalytics {
+        return TimeBlockAnalytics(period: period, totalBlocks: 0, averageDuration: 0, mostProductiveTime: nil)
+    }
+    func getProductivityInsights(for user: User) async throws -> [ProductivityInsight] { return [] }
+    func generateTimeReports(for period: DateInterval) async throws -> TimeReport {
+        return TimeReport(period: period, totalTime: 0, breakdown: [:], insights: [])
+    }
+    
+    func autoScheduleTasks(_ tasks: [ProjectTask], within timeframe: DateInterval, preferences: SchedulingPreferences) async throws -> [TimeBlock] { return [] }
+    func rebalanceSchedule(for date: Date, constraints: SchedulingConstraints?) async throws -> [TimeBlock] { return [] }
+}
+
+// Mock TemplateService
+private final class MockTemplateService: TemplateServiceProtocol {
+    var isInitialized: Bool = true
+    
+    func initialize() async throws { }
+    func cleanup() async { }
+    
+    func getAllTemplates() async throws -> [ProjectTemplate] { return [] }
+    func getTemplate(by id: UUID) async throws -> ProjectTemplate? { return nil }
+    func getTemplatesForCategory(_ category: TemplateCategory) async throws -> [ProjectTemplate] { return [] }
+    func getUserTemplates() async throws -> [ProjectTemplate] { return [] }
+    func getPublicTemplates() async throws -> [ProjectTemplate] { return [] }
+    func saveTemplate(_ template: ProjectTemplate) async throws { }
+    func updateTemplate(_ template: ProjectTemplate) async throws { }
+    func deleteTemplate(_ template: ProjectTemplate) async throws { }
+    
+    func instantiateTemplate(_ template: ProjectTemplate) async throws -> Project {
+        return Project(name: template.name, description: template.description)
+    }
+    func previewTemplate(_ template: ProjectTemplate) async throws -> TemplatePreview {
+        return TemplatePreview(template: template, estimatedTasks: 0, estimatedPhases: 0, estimatedMilestones: 0)
+    }
+    func validateTemplate(_ template: ProjectTemplate) async throws -> [TemplateValidationError] { return [] }
+    
+    func getRecommendedTemplates(for category: TemplateCategory?) async throws -> [ProjectTemplate] { return [] }
+    func suggestTemplatesForGoal(_ goal: GoalHierarchy) async throws -> [ProjectTemplate] { return [] }
+    func getSimilarTemplates(to template: ProjectTemplate) async throws -> [ProjectTemplate] { return [] }
+    func getTrendingTemplates() async throws -> [ProjectTemplate] { return [] }
+    
+    func rateTemplate(_ template: ProjectTemplate, rating: Double) async throws { }
+    func getTemplateReviews(_ template: ProjectTemplate) async throws -> [TemplateReview] { return [] }
+    func addReview(to template: ProjectTemplate, review: TemplateReview) async throws { }
+    
+    func publishTemplate(_ template: ProjectTemplate) async throws { }
+    func shareTemplate(_ template: ProjectTemplate) async throws -> String { return "mock://share" }
+    func importTemplate(from data: TemplateData) async throws -> ProjectTemplate {
+        return ProjectTemplate(name: "Imported Template", category: .planning)
+    }
+    func exportTemplate(_ template: ProjectTemplate) async throws -> TemplateData {
+        return TemplateData(metadata: TemplateMetadata(version: "1.0", exportDate: Date()), templateData: [:])
+    }
+    
+    func getTemplateAnalytics(_ template: ProjectTemplate) async throws -> TemplateAnalytics {
+        return TemplateAnalytics(template: template, totalUsage: 0, averageRating: 0.0, downloadCount: 0)
+    }
+    func getTemplateUsageStatistics() async throws -> TemplateUsageStatistics {
+        return TemplateUsageStatistics(totalTemplates: 0, publicTemplates: 0, totalUsage: 0, averageRating: 0.0)
+    }
+    func generateTemplateInsights() async throws -> [TemplateInsight] { return [] }
+} 
+
+# MARK: - Simple Analytics Service Protocol and Implementation
+
+protocol AnalyticsServiceProtocol: ServiceProtocol {
+    func trackTemplateUsage(_ templateId: UUID) async
+    func trackTemplateRating(_ templateId: UUID, rating: Double) async
+    func trackTemplateReview(_ templateId: UUID) async
+    func trackTemplatePublication(_ templateId: UUID) async
+    func trackTemplateShare(_ templateId: UUID) async
+    func trackTemplateImport(_ templateId: UUID) async
+    func getTemplateUsageOverTime(_ templateId: UUID) async -> [UsageDataPoint]
+}
+
+// Простая реализация аналитического сервиса
+final class SimpleAnalyticsService: AnalyticsServiceProtocol {
+    var isInitialized: Bool = false
+    
+    func initialize() async throws {
+        isInitialized = true
+    }
+    
+    func cleanup() async {
+        isInitialized = false
+    }
+    
+    func trackTemplateUsage(_ templateId: UUID) async { }
+    func trackTemplateRating(_ templateId: UUID, rating: Double) async { }
+    func trackTemplateReview(_ templateId: UUID) async { }
+    func trackTemplatePublication(_ templateId: UUID) async { }
+    func trackTemplateShare(_ templateId: UUID) async { }
+    func trackTemplateImport(_ templateId: UUID) async { }
+    func getTemplateUsageOverTime(_ templateId: UUID) async -> [UsageDataPoint] { return [] }
+}
+
+// Простая структура для данных использования
+struct UsageDataPoint {
+    let date: Date
+    let count: Int
 } 
