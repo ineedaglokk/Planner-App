@@ -9,276 +9,259 @@
 import SwiftUI
 
 struct AddTransactionView: View {
+    @ObservedObject var viewModel: BudgetPlannerViewModel
+    @Environment(\.presentationMode) var presentationMode
     
-    @StateObject private var viewModel = AddTransactionViewModel()
-    @Environment(\.dismiss) private var dismiss
-    @Environment(NavigationManager.self) private var navigationManager
+    @State private var amount: String = ""
+    @State private var title: String = ""
+    @State private var description: String = ""
+    @State private var transactionType: TransactionType = .expense
+    @State private var selectedCategory: String = ""
+    @State private var transactionDate = Date()
+    @State private var selectedAccount: String = "Основной"
+    @State private var paymentMethod: PaymentMethod = .card
+    
+    private let accounts = ["Основной", "Сбережения", "Наличные", "Карта"]
     
     var body: some View {
         NavigationView {
             Form {
-                // Тип транзакции
-                Section {
-                    Picker("Тип", selection: $viewModel.input.transactionType) {
-                        ForEach(TransactionType.allCases, id: \.self) { type in
-                            Text(type.title).tag(type)
-                        }
+                Section(header: Text("Тип операции")) {
+                    Picker("Тип", selection: $transactionType) {
+                        Text("Расход").tag(TransactionType.expense)
+                        Text("Доход").tag(TransactionType.income)
+                        Text("Перевод").tag(TransactionType.transfer)
                     }
                     .pickerStyle(SegmentedPickerStyle())
-                } header: {
-                    Text("Тип операции")
                 }
                 
-                // Сумма
-                Section {
-                    AmountInputView(
-                        amount: $viewModel.input.amount,
-                        currency: $viewModel.input.currency,
-                        style: .default
-                    )
-                } header: {
-                    Text("Сумма")
-                }
-                
-                // Категория
-                Section {
+                Section(header: Text("Основная информация")) {
+                    TextField("Название операции", text: $title)
+                    
                     HStack {
-                        Text("Категория")
+                        Text("Сумма")
                         Spacer()
-                        
-                        if let category = viewModel.input.selectedCategory {
-                            HStack(spacing: Spacing.xs) {
-                                Image(systemName: category.icon)
-                                    .foregroundColor(Color(hex: category.color))
-                                Text(category.name)
-                                    .foregroundColor(ColorPalette.Text.primary)
+                        TextField("0", text: $amount)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                        Text(viewModel.selectedCurrency)
+                            .foregroundColor(ColorPalette.Text.secondary)
+                    }
+                    
+                    TextField("Описание (необязательно)", text: $description)
+                }
+                
+                Section(header: Text("Категория")) {
+                    Menu {
+                        ForEach(getAvailableCategories(), id: \.self) { category in
+                            Button(category) {
+                                selectedCategory = category
                             }
-                        } else {
-                            Text("Выберите категорию")
+                        }
+                    } label: {
+                        HStack {
+                            Text("Категория")
+                            Spacer()
+                            Text(selectedCategory.isEmpty ? "Выберите категорию" : selectedCategory)
+                                .foregroundColor(selectedCategory.isEmpty ? ColorPalette.Text.tertiary : ColorPalette.Text.primary)
+                            Image(systemName: "chevron.down")
+                                .font(.caption)
                                 .foregroundColor(ColorPalette.Text.secondary)
                         }
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(ColorPalette.Text.tertiary)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        // Открыть выбор категории
-                        viewModel.showCategoryPicker = true
                     }
                 }
                 
-                // Описание
-                Section {
-                    TextField("Описание (необязательно)", text: $viewModel.input.description)
-                        .textFieldStyle(PlainTextFieldStyle())
-                } header: {
-                    Text("Описание")
+                Section(header: Text("Дополнительная информация")) {
+                    DatePicker("Дата операции", selection: $transactionDate, displayedComponents: .date)
+                    
+                    Menu {
+                        ForEach(accounts, id: \.self) { account in
+                            Button(account) {
+                                selectedAccount = account
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Text("Счет")
+                            Spacer()
+                            Text(selectedAccount)
+                                .foregroundColor(ColorPalette.Text.primary)
+                            Image(systemName: "chevron.down")
+                                .font(.caption)
+                                .foregroundColor(ColorPalette.Text.secondary)
+                        }
+                    }
+                    
+                    Picker("Способ оплаты", selection: $paymentMethod) {
+                        ForEach(PaymentMethod.allCases, id: \.self) { method in
+                            Text(method.displayName).tag(method)
+                        }
+                    }
                 }
                 
-                // Дата
-                Section {
-                    DatePicker("Дата", selection: $viewModel.input.date, displayedComponents: [.date, .hourAndMinute])
-                        .datePickerStyle(CompactDatePickerStyle())
-                } header: {
-                    Text("Дата и время")
-                }
-                
-                // Дополнительные настройки
-                Section {
-                    // Повторяющаяся транзакция
-                    Toggle("Повторяющаяся", isOn: $viewModel.input.isRecurring)
-                    
-                    if viewModel.input.isRecurring {
-                        Picker("Частота", selection: $viewModel.input.recurringPattern) {
-                            ForEach(RecurringPattern.allCases, id: \.self) { pattern in
-                                Text(pattern.title).tag(pattern)
+                if !amount.isEmpty, let amountDecimal = Decimal(string: amount) {
+                    Section(header: Text("Предварительный просмотр")) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: Spacing.xs) {
+                                Text(title.isEmpty ? "Новая операция" : title)
+                                    .font(Typography.Body.medium)
+                                    .foregroundColor(ColorPalette.Text.primary)
+                                
+                                Text(selectedCategory.isEmpty ? "Без категории" : selectedCategory)
+                                    .font(Typography.Body.small)
+                                    .foregroundColor(ColorPalette.Text.secondary)
+                                
+                                Text(formatDate(transactionDate))
+                                    .font(Typography.Body.small)
+                                    .foregroundColor(ColorPalette.Text.secondary)
                             }
+                            
+                            Spacer()
+                            
+                            Text(formatAmount(amountDecimal))
+                                .font(Typography.Body.medium)
+                                .fontWeight(.semibold)
+                                .foregroundColor(getAmountColor())
                         }
+                        .padding(.vertical, Spacing.xs)
                     }
-                    
-                    // Теги
-                    if !viewModel.input.tags.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack {
-                                ForEach(viewModel.input.tags, id: \.self) { tag in
-                                    TagView(tag: tag) {
-                                        viewModel.input.tags.removeAll { $0 == tag }
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 1)
-                        }
-                    }
-                    
-                    HStack {
-                        TextField("Добавить тег", text: $viewModel.newTag)
-                            .textFieldStyle(PlainTextFieldStyle())
-                            .onSubmit {
-                                viewModel.addTag()
-                            }
-                        
-                        Button("Добавить") {
-                            viewModel.addTag()
-                        }
-                        .disabled(viewModel.newTag.isEmpty)
-                    }
-                } header: {
-                    Text("Дополнительно")
                 }
             }
-            .navigationTitle("Новая операция")
+            .navigationTitle("Добавить операцию")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Отмена") {
-                        dismiss()
+                        presentationMode.wrappedValue.dismiss()
                     }
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Сохранить") {
-                        Task {
-                            await viewModel.saveTransaction()
-                            if viewModel.state.isSaved {
-                                dismiss()
-                            }
-                        }
+                        saveTransaction()
                     }
-                    .disabled(!viewModel.state.isValid)
-                    .fontWeight(.semibold)
+                    .disabled(!isValidTransaction())
                 }
-            }
-            .alert("Ошибка", isPresented: $viewModel.state.showError) {
-                Button("OK") { }
-            } message: {
-                if let error = viewModel.state.error {
-                    Text(error.localizedDescription)
-                }
-            }
-            .sheet(isPresented: $viewModel.showCategoryPicker) {
-                CategoryPickerView(
-                    transactionType: viewModel.input.transactionType,
-                    selectedCategory: $viewModel.input.selectedCategory
-                )
             }
         }
-        .task {
-            await viewModel.loadCategories()
+        .onAppear {
+            setupDefaultCategory()
+        }
+        .onChange(of: transactionType) { _, _ in
+            setupDefaultCategory()
         }
     }
-}
-
-// MARK: - Tag View
-struct TagView: View {
-    let tag: String
-    let onRemove: () -> Void
     
-    var body: some View {
-        HStack(spacing: Spacing.xs) {
-            Text(tag)
-                .font(Typography.Caption.medium)
-                .foregroundColor(ColorPalette.Primary.main)
+    private func getAvailableCategories() -> [String] {
+        switch transactionType {
+        case .income:
+            return [
+                "Зарплата",
+                "Фриланс",
+                "Бизнес",
+                "Дивиденды",
+                "Подарки",
+                "Возврат",
+                "Продажа",
+                "Прочие доходы"
+            ]
+        case .expense:
+            return [
+                "Продукты",
+                "Транспорт",
+                "Жилье",
+                "Коммунальные услуги",
+                "Связь",
+                "Развлечения",
+                "Одежда",
+                "Здоровье",
+                "Образование",
+                "Кафе и рестораны",
+                "Покупки",
+                "Прочие расходы"
+            ]
+        case .transfer:
+            return [
+                "Перевод между счетами",
+                "Пополнение счета",
+                "Снятие наличных",
+                "Инвестиции"
+            ]
+        }
+    }
+    
+    private func setupDefaultCategory() {
+        let categories = getAvailableCategories()
+        selectedCategory = categories.first ?? ""
+    }
+    
+    private func isValidTransaction() -> Bool {
+        return !title.isEmpty && 
+               !amount.isEmpty && 
+               Decimal(string: amount) != nil &&
+               !selectedCategory.isEmpty
+    }
+    
+    private func saveTransaction() {
+        guard let amountDecimal = Decimal(string: amount) else { return }
+        
+        Task {
+            await viewModel.addDailyTransaction(
+                date: transactionDate,
+                category: selectedCategory,
+                amount: amountDecimal,
+                description: description.isEmpty ? title : description,
+                type: transactionType
+            )
             
-            Button {
-                onRemove()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.caption2)
-                    .foregroundColor(ColorPalette.Primary.main)
-            }
-        }
-        .padding(.horizontal, Spacing.sm)
-        .padding(.vertical, Spacing.xs)
-        .background(ColorPalette.Primary.main.opacity(0.1))
-        .cornerRadius(CornerRadius.small)
-    }
-}
-
-// MARK: - Category Picker View
-struct CategoryPickerView: View {
-    let transactionType: TransactionType
-    @Binding var selectedCategory: Category?
-    @Environment(\.dismiss) private var dismiss
-    
-    @State private var categories: [Category] = []
-    @State private var isLoading = true
-    
-    var body: some View {
-        NavigationView {
-            Group {
-                if isLoading {
-                    ProgressView("Загрузка категорий...")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    List {
-                        ForEach(filteredCategories) { category in
-                            HStack {
-                                Image(systemName: category.icon)
-                                    .foregroundColor(Color(hex: category.color))
-                                    .frame(width: 24, height: 24)
-                                
-                                Text(category.name)
-                                    .font(Typography.Body.medium)
-                                
-                                Spacer()
-                                
-                                if selectedCategory?.id == category.id {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(ColorPalette.Primary.main)
-                                }
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                selectedCategory = category
-                                dismiss()
-                            }
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Выбор категории")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Готово") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-        .task {
-            await loadCategories()
-        }
-    }
-    
-    private var filteredCategories: [Category] {
-        categories.filter { category in
-            switch transactionType {
-            case .income:
-                return category.type == .income
-            case .expense:
-                return category.type == .expense
-            case .transfer:
-                return true // Переводы могут использовать любые категории
+            await MainActor.run {
+                presentationMode.wrappedValue.dismiss()
             }
         }
     }
     
-    private func loadCategories() async {
-        // Здесь загружаем категории из сервиса
-        // Пока используем моковые данные
-        await MainActor.run {
-            // Временные данные для демонстрации
-            categories = Category.sampleCategories
-            isLoading = false
+    private func getAmountColor() -> Color {
+        switch transactionType {
+        case .income:
+            return ColorPalette.Financial.income
+        case .expense:
+            return ColorPalette.Financial.expense
+        case .transfer:
+            return ColorPalette.Primary.main
         }
+    }
+    
+    private func formatAmount(_ amount: Decimal) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.currencyCode = viewModel.selectedCurrency
+        formatter.locale = Locale(identifier: "ru_RU")
+        
+        let formattedAmount = formatter.string(from: NSDecimalNumber(decimal: amount)) ?? "0 ₽"
+        
+        switch transactionType {
+        case .income:
+            return "+\(formattedAmount)"
+        case .expense:
+            return "-\(formattedAmount)"
+        case .transfer:
+            return formattedAmount
+        }
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd MMMM yyyy"
+        formatter.locale = Locale(identifier: "ru_RU")
+        return formatter.string(from: date)
     }
 }
 
 // MARK: - Preview
 #Preview {
-    AddTransactionView()
-        .environment(NavigationManager.preview)
+    AddTransactionView(viewModel: BudgetPlannerViewModel(
+        financeService: ServiceContainer.shared.financeService,
+        transactionRepository: ServiceContainer.shared.transactionRepository,
+        dataService: ServiceContainer.shared.dataService
+    ))
 } 
