@@ -1,143 +1,431 @@
 import Foundation
 import SwiftUI
 
-// MARK: - Finance Overview ViewModel
+// MARK: - FinanceOverviewViewModel
 
-@MainActor
-final class FinanceOverviewViewModel: ObservableObject {
+@Observable
+final class FinanceOverviewViewModel {
     
-    // MARK: - State
-    @Published var state = State()
-    @Published var input = Input()
+    // MARK: - Services
     
-    // MARK: - State Structure
-    struct State {
-        var currentBalance: Decimal = 0
-        var balanceChange: Decimal = 0
-        var recentTransactions: [Transaction] = []
-        var categoryStats: [CategoryStatistic] = []
-        var isLoading = false
-        var error: Error?
+    private let financeService: FinanceServiceProtocol
+    
+    // MARK: - State Properties
+    
+    var expenseEntries: [ExpenseEntry] = []
+    var incomeEntries: [IncomeEntry] = []
+    var monthlySummaries: [MonthlySummary] = []
+    var currentMonthSummary: MonthlySummary?
+    
+    // MARK: - UI State
+    
+    var isLoading = false
+    var isRefreshing = false
+    var errorMessage: String?
+    var showError = false
+    
+    // MARK: - Add Entry State
+    
+    var showAddExpenseSheet = false
+    var showAddIncomeSheet = false
+    var showEditExpenseSheet = false
+    var showEditIncomeSheet = false
+    
+    var expenseEntryName = ""
+    var expenseEntryAmount = ""
+    var expenseEntryNotes = ""
+    var isExpenseAmountValid = false
+    var expenseAmountDecimal: Decimal?
+    
+    var incomeEntryName = ""
+    var incomeEntryAmount = ""
+    var incomeEntryNotes = ""
+    var isIncomeAmountValid = false
+    var incomeAmountDecimal: Decimal?
+    
+    var editingExpenseEntry: ExpenseEntry?
+    var editingIncomeEntry: IncomeEntry?
+    
+    // MARK: - Computed Properties
+    
+
+    
+    var totalExpenses: Decimal {
+        return currentMonthSummary?.totalExpenses ?? 0
     }
     
-    struct Input {
-        var selectedPeriod: FinancePeriod = .month
+    var totalIncome: Decimal {
+        return currentMonthSummary?.totalIncome ?? 0
     }
     
-    // MARK: - Methods
+    var totalSavings: Decimal {
+        return currentMonthSummary?.totalSavings ?? 0
+    }
     
+    var formattedTotalExpenses: String {
+        return currentMonthSummary?.formattedTotalExpenses ?? "0 ₽"
+    }
+    
+    var formattedTotalIncome: String {
+        return currentMonthSummary?.formattedTotalIncome ?? "0 ₽"
+    }
+    
+    var formattedTotalSavings: String {
+        return currentMonthSummary?.formattedTotalSavings ?? "0 ₽"
+    }
+    
+    var canAddExpense: Bool {
+        return !expenseEntryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+               isExpenseAmountValid
+    }
+    
+    var canAddIncome: Bool {
+        return !incomeEntryName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+               isIncomeAmountValid
+    }
+    
+    // MARK: - Initialization
+    
+    init(financeService: FinanceServiceProtocol) {
+        self.financeService = financeService
+    }
+    
+    convenience init() {
+        // Для Preview и тестирования
+        let mockService = MockFinanceService()
+        self.init(financeService: mockService)
+    }
+    
+    // MARK: - Public Methods
+    
+    @MainActor
     func loadData() async {
-        state.isLoading = true
-        state.error = nil
+        isLoading = true
+        errorMessage = nil
         
         do {
-            // Симуляция загрузки данных
-            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 секунда
+            async let expenses = financeService.getExpenseEntries()
+            async let incomes = financeService.getIncomeEntries()
+            async let summaries = financeService.getMonthlySummaries()
+            async let currentSummary = financeService.getCurrentMonthSummary()
             
-            // Генерируем тестовые данные
-            state.currentBalance = generateRandomBalance()
-            state.balanceChange = generateRandomChange()
-            state.recentTransactions = generateRecentTransactions()
-            state.categoryStats = generateCategoryStats()
+            self.expenseEntries = try await expenses
+            self.incomeEntries = try await incomes
+            self.monthlySummaries = try await summaries
+            self.currentMonthSummary = try await currentSummary
             
         } catch {
-            state.error = error
+            await handleError(error)
         }
         
-        state.isLoading = false
+        isLoading = false
     }
     
+    @MainActor
     func refresh() async {
+        guard !isRefreshing else { return }
+        
+        isRefreshing = true
         await loadData()
+        isRefreshing = false
     }
     
-    // MARK: - Private Methods
+    // MARK: - Expense Entry Methods
     
-    private func generateRandomBalance() -> Decimal {
-        return Decimal(Double.random(in: 50000...200000))
-    }
-    
-    private func generateRandomChange() -> Decimal {
-        return Decimal(Double.random(in: -10000...10000))
-    }
-    
-    private func generateRecentTransactions() -> [Transaction] {
-        let titles = ["Продукты", "Зарплата", "Кафе", "Транспорт", "Покупки", "Коммунальные", "Развлечения"]
-        let descriptions = ["Покупка в магазине", "Основная работа", "Обед с коллегами", "Проезд", "Одежда", "Счета за месяц", "Кино"]
+    @MainActor
+    func addExpenseEntry() async {
+        guard canAddExpense, let amount = expenseAmountDecimal else { return }
         
-        return (0..<5).compactMap { index in
-            let title = titles[index % titles.count]
-            let description = descriptions[index % descriptions.count]
-            let amount = Decimal(Double.random(in: 100...5000))
-            let type: TransactionType = index == 1 ? .income : .expense
+        do {
+            let notes = expenseEntryNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+            let notesValue = notes.isEmpty ? nil : notes
             
-            return Transaction(
+            _ = try await financeService.addExpenseEntry(
+                name: expenseEntryName,
                 amount: amount,
-                type: type,
-                title: title,
-                description: description,
-                date: Calendar.current.date(byAdding: .day, value: -index, to: Date()) ?? Date()
+                notes: notesValue
             )
+            
+            // Очищаем форму
+            clearExpenseForm()
+            
+            // Обновляем данные
+            await refresh()
+            
+            // Закрываем лист
+            showAddExpenseSheet = false
+            
+        } catch {
+            await handleError(error)
         }
     }
     
-    private func generateCategoryStats() -> [CategoryStatistic] {
-        let categories = [
-            ("Продукты", "cart.fill", "#FF6B6B"),
-            ("Транспорт", "car.fill", "#4ECDC4"),
-            ("Развлечения", "gamecontroller.fill", "#45B7D1"),
-            ("Коммунальные", "house.fill", "#96CEB4"),
-            ("Здоровье", "heart.fill", "#FFEAA7")
-        ]
+    @MainActor
+    func updateExpenseEntry() async {
+        guard let entry = editingExpenseEntry,
+              canAddExpense,
+              let amount = expenseAmountDecimal else { return }
         
-        return categories.map { (name, icon, color) in
-            CategoryStatistic(
-                category: MockCategory(name: name, icon: icon, color: color),
-                amount: Decimal(Double.random(in: 1000...10000))
-            )
+        do {
+            entry.updateName(expenseEntryName)
+            entry.updateAmount(amount)
+            
+            let notes = expenseEntryNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+            entry.notes = notes.isEmpty ? nil : notes
+            
+            try await financeService.updateExpenseEntry(entry)
+            
+            // Очищаем форму
+            clearExpenseForm()
+            editingExpenseEntry = nil
+            
+            // Обновляем данные
+            await refresh()
+            
+            // Закрываем лист
+            showEditExpenseSheet = false
+            
+        } catch {
+            await handleError(error)
         }
+    }
+    
+    @MainActor
+    func deleteExpenseEntry(_ entry: ExpenseEntry) async {
+        do {
+            try await financeService.deleteExpenseEntry(entry)
+            await refresh()
+        } catch {
+            await handleError(error)
+        }
+    }
+    
+    func startEditingExpenseEntry(_ entry: ExpenseEntry) {
+        editingExpenseEntry = entry
+        expenseEntryName = entry.name
+        expenseEntryAmount = entry.amount.description
+        expenseEntryNotes = entry.notes ?? ""
+        
+        // Валидируем введенные данные
+        let validation = financeService.validateAmount(expenseEntryAmount)
+        isExpenseAmountValid = validation.isValid
+        expenseAmountDecimal = validation.decimal
+        
+        showEditExpenseSheet = true
+    }
+    
+    func clearExpenseForm() {
+        expenseEntryName = ""
+        expenseEntryAmount = ""
+        expenseEntryNotes = ""
+        isExpenseAmountValid = false
+        expenseAmountDecimal = nil
+    }
+    
+    // MARK: - Income Entry Methods
+    
+    @MainActor
+    func addIncomeEntry() async {
+        guard canAddIncome, let amount = incomeAmountDecimal else { return }
+        
+        do {
+            let notes = incomeEntryNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+            let notesValue = notes.isEmpty ? nil : notes
+            
+            _ = try await financeService.addIncomeEntry(
+                name: incomeEntryName,
+                amount: amount,
+                notes: notesValue
+            )
+            
+            // Очищаем форму
+            clearIncomeForm()
+            
+            // Обновляем данные
+            await refresh()
+            
+            // Закрываем лист
+            showAddIncomeSheet = false
+            
+        } catch {
+            await handleError(error)
+        }
+    }
+    
+    @MainActor
+    func updateIncomeEntry() async {
+        guard let entry = editingIncomeEntry,
+              canAddIncome,
+              let amount = incomeAmountDecimal else { return }
+        
+        do {
+            entry.updateName(incomeEntryName)
+            entry.updateAmount(amount)
+            
+            let notes = incomeEntryNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+            entry.notes = notes.isEmpty ? nil : notes
+            
+            try await financeService.updateIncomeEntry(entry)
+            
+            // Очищаем форму
+            clearIncomeForm()
+            editingIncomeEntry = nil
+            
+            // Обновляем данные
+            await refresh()
+            
+            // Закрываем лист
+            showEditIncomeSheet = false
+            
+        } catch {
+            await handleError(error)
+        }
+    }
+    
+    @MainActor
+    func deleteIncomeEntry(_ entry: IncomeEntry) async {
+        do {
+            try await financeService.deleteIncomeEntry(entry)
+            await refresh()
+        } catch {
+            await handleError(error)
+        }
+    }
+    
+    func startEditingIncomeEntry(_ entry: IncomeEntry) {
+        editingIncomeEntry = entry
+        incomeEntryName = entry.name
+        incomeEntryAmount = entry.amount.description
+        incomeEntryNotes = entry.notes ?? ""
+        
+        // Валидируем введенные данные
+        let validation = financeService.validateAmount(incomeEntryAmount)
+        isIncomeAmountValid = validation.isValid
+        incomeAmountDecimal = validation.decimal
+        
+        showEditIncomeSheet = true
+    }
+    
+    func clearIncomeForm() {
+        incomeEntryName = ""
+        incomeEntryAmount = ""
+        incomeEntryNotes = ""
+        isIncomeAmountValid = false
+        incomeAmountDecimal = nil
+    }
+    
+    // MARK: - Validation Handlers
+    
+    func onExpenseAmountValidationChange(isValid: Bool, decimal: Decimal?) {
+        isExpenseAmountValid = isValid
+        expenseAmountDecimal = decimal
+    }
+    
+    func onIncomeAmountValidationChange(isValid: Bool, decimal: Decimal?) {
+        isIncomeAmountValid = isValid
+        incomeAmountDecimal = decimal
+    }
+    
+    // MARK: - Utility Methods
+    
+    #if DEBUG
+    @MainActor
+    func clearAllData() async {
+        do {
+            if let service = financeService as? FinanceService {
+                try await service.clearAllData()
+                await refresh()
+            }
+        } catch {
+            await handleError(error)
+        }
+    }
+    #endif
+    
+    @MainActor
+    private func handleError(_ error: Error) {
+        let appError = AppError.from(error)
+        errorMessage = appError.localizedDescription
+        showError = true
+        
+        #if DEBUG
+        print("FinanceOverviewViewModel Error: \(error)")
+        #endif
     }
 }
 
-// MARK: - Category Statistic
+// MARK: - Mock Service for Preview
 
-struct CategoryStatistic: Identifiable {
-    let id = UUID()
-    let category: MockCategory
-    let amount: Decimal
-}
-
-// MARK: - Mock Category
-
-struct MockCategory {
-    let name: String
-    let icon: String
-    let color: String
-}
-
-// MARK: - Preview Helper
-
-extension FinanceOverviewViewModel {
-    static var preview: FinanceOverviewViewModel {
-        let viewModel = FinanceOverviewViewModel()
-        viewModel.state.currentBalance = 125000
-        viewModel.state.balanceChange = 5000
-        viewModel.state.recentTransactions = [
-            Transaction(
-                amount: 3500,
-                type: .expense,
-                title: "Продукты",
-                description: "Покупка в магазине",
-                date: Date()
-            ),
-            Transaction(
-                amount: 80000,
-                type: .income,
-                title: "Зарплата",
-                description: "Основная работа",
-                date: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date()
-            )
-        ]
-        return viewModel
+class MockFinanceService: FinanceServiceProtocol {
+    var isInitialized: Bool = true
+    
+    func initialize() async throws {}
+    func cleanup() async {}
+    
+    func addExpenseEntry(name: String, amount: Decimal, notes: String?) async throws -> ExpenseEntry {
+        return ExpenseEntry(name: name, amount: amount, notes: notes)
+    }
+    
+    func addIncomeEntry(name: String, amount: Decimal, notes: String?) async throws -> IncomeEntry {
+        return IncomeEntry(name: name, amount: amount, notes: notes)
+    }
+    
+    func updateExpenseEntry(_ entry: ExpenseEntry) async throws {}
+    func updateIncomeEntry(_ entry: IncomeEntry) async throws {}
+    func deleteExpenseEntry(_ entry: ExpenseEntry) async throws {}
+    func deleteIncomeEntry(_ entry: IncomeEntry) async throws {}
+    
+    func getExpenseEntries() async throws -> [ExpenseEntry] {
+        return []
+    }
+    
+    func getIncomeEntries() async throws -> [IncomeEntry] {
+        return []
+    }
+    
+    func getMonthlySummaries() async throws -> [MonthlySummary] {
+        return []
+    }
+    
+    func getCurrentMonthSummary() async throws -> MonthlySummary {
+        return MonthlySummary.createCurrentMonth()
+    }
+    
+    func hasAnyFinancialData() async throws -> Bool {
+        return false
+    }
+    
+    func initializeEmptyState() async throws {}
+    
+    func recalculateCurrentMonth() async throws -> MonthlySummary {
+        return MonthlySummary.createCurrentMonth()
+    }
+    
+    func recalculateAllData() async throws -> [MonthlySummary] {
+        return []
+    }
+    
+    func getTotalBalance() async throws -> Decimal {
+        return 0
+    }
+    
+    func getBalanceForMonth(_ month: String) async throws -> Decimal {
+        return 0
+    }
+    
+    func getExpensesByCategory(for month: String) async throws -> [CategoryStatistic] {
+        return []
+    }
+    
+    func getIncomesByCategory(for month: String) async throws -> [CategoryStatistic] {
+        return []
+    }
+    
+    func validateAmount(_ amount: String) -> (isValid: Bool, decimal: Decimal?) {
+        return FinanceService.validateAmount(amount)
+    }
+    
+    func validateEntryName(_ name: String) -> Bool {
+        return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 } 

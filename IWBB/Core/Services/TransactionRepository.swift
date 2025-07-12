@@ -1,515 +1,320 @@
 import Foundation
 import SwiftData
 
-// MARK: - Transaction Repository Protocol
+// MARK: - TransactionRepository Protocol
 
 protocol TransactionRepositoryProtocol {
-    // MARK: - Basic CRUD Operations
-    func fetchTransactions(
-        from startDate: Date?,
-        to endDate: Date?,
-        type: TransactionType?,
-        category: Category?
-    ) async throws -> [Transaction]
-    
+    // CRUD для транзакций
+    func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [Transaction]
+    func fetchAllTransactions() async throws -> [Transaction]
+    func fetchRecentTransactions(limit: Int) async throws -> [Transaction]
     func fetchTransaction(by id: UUID) async throws -> Transaction?
     func save(_ transaction: Transaction) async throws
+    func update(_ transaction: Transaction) async throws
     func delete(_ transaction: Transaction) async throws
-    func batchSave(_ transactions: [Transaction]) async throws
     
-    // MARK: - Analytics & Aggregations
-    func getMonthlyBalance(for date: Date) async throws -> FinanceBalance
-    func getWeeklyBalance(for date: Date) async throws -> FinanceBalance
-    func getYearlyBalance(for date: Date) async throws -> FinanceBalance
-    func getTopCategories(for period: DateInterval, type: TransactionType) async throws -> [CategorySummary]
-    func getTrendData(for period: DateInterval) async throws -> [BalancePoint]
+    // CRUD для записей расходов
+    func fetchExpenseEntries() async throws -> [ExpenseEntry]
+    func fetchExpenseEntriesForMonth(_ month: String) async throws -> [ExpenseEntry]
+    func saveExpenseEntry(_ entry: ExpenseEntry) async throws
+    func updateExpenseEntry(_ entry: ExpenseEntry) async throws
+    func deleteExpenseEntry(_ entry: ExpenseEntry) async throws
     
-    // MARK: - Search & Filtering
-    func searchTransactions(query: String) async throws -> [Transaction]
-    func getRecentTransactions(limit: Int) async throws -> [Transaction]
-    func getTransactionsByAccount(_ account: String) async throws -> [Transaction]
-    func getRecurringTransactions() async throws -> [Transaction]
+    // CRUD для записей доходов
+    func fetchIncomeEntries() async throws -> [IncomeEntry]
+    func fetchIncomeEntriesForMonth(_ month: String) async throws -> [IncomeEntry]
+    func saveIncomeEntry(_ entry: IncomeEntry) async throws
+    func updateIncomeEntry(_ entry: IncomeEntry) async throws
+    func deleteIncomeEntry(_ entry: IncomeEntry) async throws
     
-    // MARK: - Statistics
-    func getTotalBalance() async throws -> Decimal
-    func getMonthlySpending(for date: Date) async throws -> Decimal
-    func getMonthlyIncome(for date: Date) async throws -> Decimal
-    func getAverageTransactionAmount(for type: TransactionType) async throws -> Decimal
+    // CRUD для месячных сводок
+    func fetchMonthlySummaries() async throws -> [MonthlySummary]
+    func fetchMonthlySummary(for month: String) async throws -> MonthlySummary?
+    func saveMonthlySummary(_ summary: MonthlySummary) async throws
+    func updateMonthlySummary(_ summary: MonthlySummary) async throws
+    func deleteMonthlySummary(_ summary: MonthlySummary) async throws
     
-    // MARK: - Currency Operations
-    func getTransactionsInCurrency(_ currency: String) async throws -> [Transaction]
-    func convertTransactionsToBaseCurrency(_ transactions: [Transaction]) async throws -> [Transaction]
+    // Автоматическое обновление сводок
+    func recalculateMonthlySummary(for month: String) async throws -> MonthlySummary
+    func recalculateAllMonthlySummaries() async throws -> [MonthlySummary]
 }
 
-// MARK: - Supporting Data Structures
-
-struct FinanceBalance {
-    let income: Decimal
-    let expenses: Decimal
-    let balance: Decimal
-    let period: DateInterval
-    let transactionCount: Int
-    let currency: String
-    
-    var isPositive: Bool { balance >= 0 }
-    var changeFromPreviousPeriod: Decimal?
-    
-    init(
-        income: Decimal,
-        expenses: Decimal,
-        period: DateInterval,
-        transactionCount: Int,
-        currency: String = "RUB",
-        changeFromPreviousPeriod: Decimal? = nil
-    ) {
-        self.income = income
-        self.expenses = expenses
-        self.balance = income - expenses
-        self.period = period
-        self.transactionCount = transactionCount
-        self.currency = currency
-        self.changeFromPreviousPeriod = changeFromPreviousPeriod
-    }
-}
-
-struct CategorySummary {
-    let category: Category
-    let totalAmount: Decimal
-    let transactionCount: Int
-    let percentage: Double
-    let averageAmount: Decimal
-    
-    init(category: Category, totalAmount: Decimal, transactionCount: Int, totalSum: Decimal) {
-        self.category = category
-        self.totalAmount = totalAmount
-        self.transactionCount = transactionCount
-        self.percentage = totalSum > 0 ? Double(totalAmount / totalSum) * 100 : 0
-        self.averageAmount = transactionCount > 0 ? totalAmount / Decimal(transactionCount) : 0
-    }
-}
-
-struct BalancePoint {
-    let date: Date
-    let income: Decimal
-    let expenses: Decimal
-    let balance: Decimal
-    
-    init(date: Date, income: Decimal, expenses: Decimal) {
-        self.date = date
-        self.income = income
-        self.expenses = expenses
-        self.balance = income - expenses
-    }
-}
-
-// MARK: - Transaction Repository Implementation
+// MARK: - TransactionRepository Implementation
 
 final class TransactionRepository: TransactionRepositoryProtocol {
     
     // MARK: - Properties
     
-    private let modelContext: ModelContext
-    private let syncService: SyncServiceProtocol
+    private let dataService: DataServiceProtocol
     
     // MARK: - Initialization
     
-    init(modelContext: ModelContext, syncService: SyncServiceProtocol) {
-        self.modelContext = modelContext
-        self.syncService = syncService
+    init(dataService: DataServiceProtocol) {
+        self.dataService = dataService
     }
     
-    // MARK: - Basic CRUD Operations
+    // MARK: - Transaction CRUD
     
-    func fetchTransactions(
-        from startDate: Date? = nil,
-        to endDate: Date? = nil,
-        type: TransactionType? = nil,
-        category: Category? = nil
-    ) async throws -> [Transaction] {
-        var predicates: [Predicate<Transaction>] = []
-        
-        // Date range filtering
-        if let startDate = startDate {
-            predicates.append(#Predicate { $0.date >= startDate })
+    func fetchTransactions(from startDate: Date, to endDate: Date) async throws -> [Transaction] {
+        let predicate = #Predicate<Transaction> { transaction in
+            transaction.date >= startDate && transaction.date <= endDate
         }
+        return try await dataService.fetch(Transaction.self, predicate: predicate)
+    }
+    
+    func fetchAllTransactions() async throws -> [Transaction] {
+        return try await dataService.fetch(Transaction.self, predicate: nil)
+    }
+    
+    func fetchRecentTransactions(limit: Int = 10) async throws -> [Transaction] {
+        var descriptor = FetchDescriptor<Transaction>()
+        descriptor.sortBy = [SortDescriptor(\Transaction.date, order: .reverse)]
+        descriptor.fetchLimit = limit
         
-        if let endDate = endDate {
-            predicates.append(#Predicate { $0.date <= endDate })
-        }
-        
-        // Type filtering
-        if let type = type {
-            predicates.append(#Predicate { $0.type == type })
-        }
-        
-        // Category filtering
-        if let category = category {
-            predicates.append(#Predicate { $0.category?.id == category.id })
-        }
-        
-        // Combine predicates
-        let compound = predicates.reduce(nil) { result, predicate in
-            if let result = result {
-                return #Predicate<Transaction> { transaction in
-                    result.evaluate(transaction) && predicate.evaluate(transaction)
-                }
-            } else {
-                return predicate
-            }
-        }
-        
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: compound,
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        
-        return try modelContext.fetch(descriptor)
+        return try await dataService.modelContext.fetch(descriptor)
     }
     
     func fetchTransaction(by id: UUID) async throws -> Transaction? {
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.id == id }
-        )
-        return try modelContext.fetch(descriptor).first
+        let predicate = #Predicate<Transaction> { transaction in
+            transaction.id == id
+        }
+        return try await dataService.fetchOne(Transaction.self, predicate: predicate)
     }
     
     func save(_ transaction: Transaction) async throws {
-        transaction.needsSync = true
-        transaction.updatedAt = Date()
-        
-        modelContext.insert(transaction)
-        try modelContext.save()
-        
-        // Trigger sync
-        await syncService.scheduleSync()
+        try transaction.validate()
+        try await dataService.save(transaction)
+    }
+    
+    func update(_ transaction: Transaction) async throws {
+        try transaction.validate()
+        try await dataService.update(transaction)
     }
     
     func delete(_ transaction: Transaction) async throws {
-        modelContext.delete(transaction)
-        try modelContext.save()
-        
-        // Trigger sync
-        await syncService.scheduleSync()
+        try await dataService.delete(transaction)
     }
     
-    func batchSave(_ transactions: [Transaction]) async throws {
-        for transaction in transactions {
-            transaction.needsSync = true
-            transaction.updatedAt = Date()
-            modelContext.insert(transaction)
+    // MARK: - ExpenseEntry CRUD
+    
+    func fetchExpenseEntries() async throws -> [ExpenseEntry] {
+        var descriptor = FetchDescriptor<ExpenseEntry>()
+        descriptor.sortBy = [SortDescriptor(\ExpenseEntry.date, order: .reverse)]
+        return try await dataService.modelContext.fetch(descriptor)
+    }
+    
+    func fetchExpenseEntriesForMonth(_ month: String) async throws -> [ExpenseEntry] {
+        let predicate = #Predicate<ExpenseEntry> { entry in
+            entry.month == month
+        }
+        var descriptor = FetchDescriptor<ExpenseEntry>(predicate: predicate)
+        descriptor.sortBy = [SortDescriptor(\ExpenseEntry.date, order: .reverse)]
+        return try await dataService.modelContext.fetch(descriptor)
+    }
+    
+    func saveExpenseEntry(_ entry: ExpenseEntry) async throws {
+        try entry.validate()
+        try await dataService.save(entry)
+        
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateMonthlySummary(for: entry.month)
+    }
+    
+    func updateExpenseEntry(_ entry: ExpenseEntry) async throws {
+        try entry.validate()
+        try await dataService.update(entry)
+        
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateMonthlySummary(for: entry.month)
+    }
+    
+    func deleteExpenseEntry(_ entry: ExpenseEntry) async throws {
+        let month = entry.month
+        try await dataService.delete(entry)
+        
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateMonthlySummary(for: month)
+    }
+    
+    // MARK: - IncomeEntry CRUD
+    
+    func fetchIncomeEntries() async throws -> [IncomeEntry] {
+        var descriptor = FetchDescriptor<IncomeEntry>()
+        descriptor.sortBy = [SortDescriptor(\IncomeEntry.date, order: .reverse)]
+        return try await dataService.modelContext.fetch(descriptor)
+    }
+    
+    func fetchIncomeEntriesForMonth(_ month: String) async throws -> [IncomeEntry] {
+        let predicate = #Predicate<IncomeEntry> { entry in
+            entry.month == month
+        }
+        var descriptor = FetchDescriptor<IncomeEntry>(predicate: predicate)
+        descriptor.sortBy = [SortDescriptor(\IncomeEntry.date, order: .reverse)]
+        return try await dataService.modelContext.fetch(descriptor)
+    }
+    
+    func saveIncomeEntry(_ entry: IncomeEntry) async throws {
+        try entry.validate()
+        try await dataService.save(entry)
+        
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateMonthlySummary(for: entry.month)
+    }
+    
+    func updateIncomeEntry(_ entry: IncomeEntry) async throws {
+        try entry.validate()
+        try await dataService.update(entry)
+        
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateMonthlySummary(for: entry.month)
+    }
+    
+    func deleteIncomeEntry(_ entry: IncomeEntry) async throws {
+        let month = entry.month
+        try await dataService.delete(entry)
+        
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateMonthlySummary(for: month)
+    }
+    
+    // MARK: - MonthlySummary CRUD
+    
+    func fetchMonthlySummaries() async throws -> [MonthlySummary] {
+        var descriptor = FetchDescriptor<MonthlySummary>()
+        descriptor.sortBy = [SortDescriptor(\MonthlySummary.month, order: .reverse)]
+        return try await dataService.modelContext.fetch(descriptor)
+    }
+    
+    func fetchMonthlySummary(for month: String) async throws -> MonthlySummary? {
+        let predicate = #Predicate<MonthlySummary> { summary in
+            summary.month == month
+        }
+        return try await dataService.fetchOne(MonthlySummary.self, predicate: predicate)
+    }
+    
+    func saveMonthlySummary(_ summary: MonthlySummary) async throws {
+        try summary.validate()
+        try await dataService.save(summary)
+    }
+    
+    func updateMonthlySummary(_ summary: MonthlySummary) async throws {
+        try summary.validate()
+        try await dataService.update(summary)
+    }
+    
+    func deleteMonthlySummary(_ summary: MonthlySummary) async throws {
+        try await dataService.delete(summary)
+    }
+    
+    // MARK: - Auto-calculation Methods
+    
+    func recalculateMonthlySummary(for month: String) async throws -> MonthlySummary {
+        // Получаем существующую сводку или создаем новую
+        var summary = try await fetchMonthlySummary(for: month)
+        
+        if summary == nil {
+            summary = MonthlySummary(month: month)
         }
         
-        try modelContext.save()
-        
-        // Trigger sync
-        await syncService.scheduleSync()
-    }
-    
-    // MARK: - Analytics & Aggregations
-    
-    func getMonthlyBalance(for date: Date) async throws -> FinanceBalance {
-        let calendar = Calendar.current
-        guard let monthInterval = calendar.dateInterval(of: .month, for: date) else {
-            throw AppError.invalidDate
+        guard let existingSummary = summary else {
+            throw AppError.fetchFailed("Не удалось создать месячную сводку")
         }
         
-        return try await calculateBalance(for: monthInterval)
-    }
-    
-    func getWeeklyBalance(for date: Date) async throws -> FinanceBalance {
-        let calendar = Calendar.current
-        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: date) else {
-            throw AppError.invalidDate
+        // Получаем записи для этого месяца
+        let expenseEntries = try await fetchExpenseEntriesForMonth(month)
+        let incomeEntries = try await fetchIncomeEntriesForMonth(month)
+        
+        // Пересчитываем сводку
+        existingSummary.recalculate(expenseEntries: expenseEntries, incomeEntries: incomeEntries)
+        
+        // Сохраняем обновленную сводку
+        if existingSummary.createdAt == Date.distantPast {
+            try await saveMonthlySummary(existingSummary)
+        } else {
+            try await updateMonthlySummary(existingSummary)
         }
         
-        return try await calculateBalance(for: weekInterval)
+        return existingSummary
     }
     
-    func getYearlyBalance(for date: Date) async throws -> FinanceBalance {
-        let calendar = Calendar.current
-        guard let yearInterval = calendar.dateInterval(of: .year, for: date) else {
-            throw AppError.invalidDate
-        }
+    func recalculateAllMonthlySummaries() async throws -> [MonthlySummary] {
+        // Получаем все уникальные месяцы из записей
+        let expenseEntries = try await fetchExpenseEntries()
+        let incomeEntries = try await fetchIncomeEntries()
         
-        return try await calculateBalance(for: yearInterval)
-    }
-    
-    private func calculateBalance(for period: DateInterval) async throws -> FinanceBalance {
-        let transactions = try await fetchTransactions(
-            from: period.start,
-            to: period.end
-        )
+        let allMonths = Set(expenseEntries.map { $0.month } + incomeEntries.map { $0.month })
         
-        let income = transactions
-            .filter { $0.type == .income }
-            .reduce(Decimal.zero) { $0 + $1.convertedAmount }
+        var summaries: [MonthlySummary] = []
         
-        let expenses = transactions
-            .filter { $0.type == .expense }
-            .reduce(Decimal.zero) { $0 + $1.convertedAmount }
-        
-        return FinanceBalance(
-            income: income,
-            expenses: expenses,
-            period: period,
-            transactionCount: transactions.count
-        )
-    }
-    
-    func getTopCategories(for period: DateInterval, type: TransactionType) async throws -> [CategorySummary] {
-        let transactions = try await fetchTransactions(
-            from: period.start,
-            to: period.end,
-            type: type
-        )
-        
-        // Group by category
-        let grouped = Dictionary(grouping: transactions) { $0.category }
-        
-        // Calculate totals
-        var summaries: [CategorySummary] = []
-        let totalSum = transactions.reduce(Decimal.zero) { $0 + $1.convertedAmount }
-        
-        for (category, transactions) in grouped {
-            guard let category = category else { continue }
-            
-            let categoryTotal = transactions.reduce(Decimal.zero) { $0 + $1.convertedAmount }
-            let summary = CategorySummary(
-                category: category,
-                totalAmount: categoryTotal,
-                transactionCount: transactions.count,
-                totalSum: totalSum
-            )
+        for month in allMonths {
+            let summary = try await recalculateMonthlySummary(for: month)
             summaries.append(summary)
         }
         
-        // Sort by amount descending
-        return summaries.sorted { $0.totalAmount > $1.totalAmount }
-    }
-    
-    func getTrendData(for period: DateInterval) async throws -> [BalancePoint] {
-        let calendar = Calendar.current
-        let transactions = try await fetchTransactions(
-            from: period.start,
-            to: period.end
-        )
-        
-        // Group transactions by day
-        let groupedByDay = Dictionary(grouping: transactions) { transaction in
-            calendar.startOfDay(for: transaction.date)
-        }
-        
-        var trendData: [BalancePoint] = []
-        
-        // Generate data points for each day in period
-        var currentDate = calendar.startOfDay(for: period.start)
-        let endDate = calendar.startOfDay(for: period.end)
-        
-        while currentDate <= endDate {
-            let dayTransactions = groupedByDay[currentDate] ?? []
-            
-            let income = dayTransactions
-                .filter { $0.type == .income }
-                .reduce(Decimal.zero) { $0 + $1.convertedAmount }
-            
-            let expenses = dayTransactions
-                .filter { $0.type == .expense }
-                .reduce(Decimal.zero) { $0 + $1.convertedAmount }
-            
-            let balancePoint = BalancePoint(
-                date: currentDate,
-                income: income,
-                expenses: expenses
-            )
-            trendData.append(balancePoint)
-            
-            currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
-        }
-        
-        return trendData
-    }
-    
-    // MARK: - Search & Filtering
-    
-    func searchTransactions(query: String) async throws -> [Transaction] {
-        let lowercaseQuery = query.lowercased()
-        
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { transaction in
-                transaction.title.localizedStandardContains(lowercaseQuery) ||
-                (transaction.description?.localizedStandardContains(lowercaseQuery) ?? false) ||
-                transaction.tags.contains { $0.localizedStandardContains(lowercaseQuery) }
-            },
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        
-        return try modelContext.fetch(descriptor)
-    }
-    
-    func getRecentTransactions(limit: Int = 10) async throws -> [Transaction] {
-        let descriptor = FetchDescriptor<Transaction>(
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        descriptor.fetchLimit = limit
-        
-        return try modelContext.fetch(descriptor)
-    }
-    
-    func getTransactionsByAccount(_ account: String) async throws -> [Transaction] {
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.account == account },
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        
-        return try modelContext.fetch(descriptor)
-    }
-    
-    func getRecurringTransactions() async throws -> [Transaction] {
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.isRecurring == true },
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        
-        return try modelContext.fetch(descriptor)
-    }
-    
-    // MARK: - Statistics
-    
-    func getTotalBalance() async throws -> Decimal {
-        let allTransactions = try await fetchTransactions()
-        
-        return allTransactions.reduce(Decimal.zero) { total, transaction in
-            switch transaction.type {
-            case .income:
-                return total + transaction.convertedAmount
-            case .expense:
-                return total - transaction.convertedAmount
-            case .transfer:
-                return total // Transfers don't affect total balance
-            }
-        }
-    }
-    
-    func getMonthlySpending(for date: Date) async throws -> Decimal {
-        let monthlyBalance = try await getMonthlyBalance(for: date)
-        return monthlyBalance.expenses
-    }
-    
-    func getMonthlyIncome(for date: Date) async throws -> Decimal {
-        let monthlyBalance = try await getMonthlyBalance(for: date)
-        return monthlyBalance.income
-    }
-    
-    func getAverageTransactionAmount(for type: TransactionType) async throws -> Decimal {
-        let transactions = try await fetchTransactions(type: type)
-        
-        guard !transactions.isEmpty else { return 0 }
-        
-        let total = transactions.reduce(Decimal.zero) { $0 + $1.convertedAmount }
-        return total / Decimal(transactions.count)
-    }
-    
-    // MARK: - Currency Operations
-    
-    func getTransactionsInCurrency(_ currency: String) async throws -> [Transaction] {
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { $0.currency == currency },
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        
-        return try modelContext.fetch(descriptor)
-    }
-    
-    func convertTransactionsToBaseCurrency(_ transactions: [Transaction]) async throws -> [Transaction] {
-        // This method would use a currency service to convert transactions
-        // For now, we'll return the transactions as-is since they already have convertedAmount
-        return transactions
+        return summaries.sorted { $0.month > $1.month }
     }
 }
 
-// MARK: - Transaction Repository Extensions
+// MARK: - Helper Extensions
 
 extension TransactionRepository {
     
-    /// Получает статистику по периодам
-    func getPeriodicStats(for periods: [DateInterval]) async throws -> [FinanceBalance] {
-        var stats: [FinanceBalance] = []
+    /// Получает статистику по категориям для периода
+    func getCategoryStats(from startDate: Date, to endDate: Date) async throws -> [CategoryStatistic] {
+        let transactions = try await fetchTransactions(from: startDate, to: endDate)
         
-        for period in periods {
-            let balance = try await calculateBalance(for: period)
-            stats.append(balance)
-        }
+        var stats: [UUID: CategoryStatistic] = [:]
         
-        return stats
-    }
-    
-    /// Получает транзакции с группировкой по дням
-    func getTransactionsGroupedByDay(for period: DateInterval) async throws -> [Date: [Transaction]] {
-        let transactions = try await fetchTransactions(
-            from: period.start,
-            to: period.end
-        )
-        
-        let calendar = Calendar.current
-        return Dictionary(grouping: transactions) { transaction in
-            calendar.startOfDay(for: transaction.date)
-        }
-    }
-    
-    /// Проверяет есть ли транзакции в указанном периоде
-    func hasTransactions(in period: DateInterval) async throws -> Bool {
-        let descriptor = FetchDescriptor<Transaction>(
-            predicate: #Predicate { transaction in
-                transaction.date >= period.start && transaction.date <= period.end
-            }
-        )
-        descriptor.fetchLimit = 1
-        
-        let transactions = try modelContext.fetch(descriptor)
-        return !transactions.isEmpty
-    }
-    
-    /// Получает следующие повторяющиеся транзакции
-    func getUpcomingRecurringTransactions(limit: Int = 10) async throws -> [Transaction] {
-        let recurringTransactions = try await getRecurringTransactions()
-        var upcomingTransactions: [Transaction] = []
-        
-        for transaction in recurringTransactions {
-            if let nextTransaction = transaction.createNextRecurringTransaction() {
-                upcomingTransactions.append(nextTransaction)
-            }
-        }
-        
-        // Sort by date and limit
-        upcomingTransactions.sort { $0.date < $1.date }
-        return Array(upcomingTransactions.prefix(limit))
-    }
-    
-    /// Экспортирует транзакции в CSV формат
-    func exportTransactionsToCSV(for period: DateInterval) async throws -> String {
-        let transactions = try await fetchTransactions(
-            from: period.start,
-            to: period.end
-        )
-        
-        var csv = "Date,Type,Amount,Currency,Title,Description,Category,Account\n"
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd"
-        
-        for transaction in transactions {
-            let date = dateFormatter.string(from: transaction.date)
-            let type = transaction.type.displayName
-            let amount = transaction.amount.description
-            let currency = transaction.currency
-            let title = transaction.title.replacingOccurrences(of: ",", with: ";")
-            let description = (transaction.description ?? "").replacingOccurrences(of: ",", with: ";")
-            let category = transaction.category?.name ?? ""
-            let account = transaction.account ?? ""
+        for transaction in transactions where transaction.type == .expense {
+            guard let category = transaction.category else { continue }
             
-            csv += "\(date),\(type),\(amount),\(currency),\(title),\(description),\(category),\(account)\n"
+            if var stat = stats[category.id] {
+                stat.amount += transaction.amount
+                stat.count += 1
+                stats[category.id] = stat
+            } else {
+                stats[category.id] = CategoryStatistic(
+                    category: category,
+                    amount: transaction.amount,
+                    count: 1
+                )
+            }
         }
         
-        return csv
+        return Array(stats.values).sorted { $0.amount > $1.amount }
+    }
+    
+    /// Получает общую сумму расходов за месяц
+    func getTotalExpensesForMonth(_ month: String) async throws -> Decimal {
+        let entries = try await fetchExpenseEntriesForMonth(month)
+        return entries.reduce(0) { $0 + $1.amount }
+    }
+    
+    /// Получает общую сумму доходов за месяц
+    func getTotalIncomeForMonth(_ month: String) async throws -> Decimal {
+        let entries = try await fetchIncomeEntriesForMonth(month)
+        return entries.reduce(0) { $0 + $1.amount }
+    }
+    
+    /// Получает баланс за месяц
+    func getBalanceForMonth(_ month: String) async throws -> Decimal {
+        let income = try await getTotalIncomeForMonth(month)
+        let expenses = try await getTotalExpensesForMonth(month)
+        return income - expenses
+    }
+}
+
+// MARK: - Supporting Types
+
+struct CategoryStatistic: Identifiable {
+    let id = UUID()
+    let category: Category
+    var amount: Decimal
+    var count: Int
+    
+    var percentage: Double = 0.0
+    var averageAmount: Decimal {
+        guard count > 0 else { return 0 }
+        return amount / Decimal(count)
     }
 } 

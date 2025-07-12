@@ -102,7 +102,7 @@ struct AmountInputView: View {
             // Amount text field
             TextField(style.placeholder, text: $amountText)
                 .textFieldStyle(AmountTextFieldStyle(style: style))
-                .keyboardType(.decimalPad)
+                .keyboardType(.numberPad)
                 .focused($isAmountFocused)
                 .multilineTextAlignment(style.textAlignment)
                 .onChange(of: amountText) { _, newValue in
@@ -181,6 +181,11 @@ struct AmountInputView: View {
     private func handleAmountTextChange(_ newValue: String) {
         let cleanValue = cleanAmountText(newValue)
         
+        // Обновляем текст только если он изменился
+        if cleanValue != amountText {
+            amountText = cleanValue
+        }
+        
         if let decimal = Decimal(string: cleanValue) {
             amount = decimal
             onAmountChanged?(decimal)
@@ -191,12 +196,28 @@ struct AmountInputView: View {
     }
     
     private func cleanAmountText(_ text: String) -> String {
-        // Remove non-numeric characters except decimal separator
-        let allowedCharacters = CharacterSet(charactersIn: "0123456789.,")
-        let filtered = text.components(separatedBy: allowedCharacters.inverted).joined()
+        // Разрешаем только цифры, точки и запятые
+        let filtered = text.filter { char in
+            return char.isNumber || char == "." || char == ","
+        }
         
-        // Replace comma with dot for Decimal parsing
-        return filtered.replacingOccurrences(of: ",", with: ".")
+        // Заменяем запятые на точки
+        let dotNormalized = filtered.replacingOccurrences(of: ",", with: ".")
+        
+        // Убираем дублирующиеся точки
+        let components = dotNormalized.components(separatedBy: ".")
+        if components.count > 2 {
+            return components[0] + "." + components[1]
+        }
+        
+        // Ограничиваем количество знаков после точки
+        if components.count == 2 {
+            let beforeDot = components[0]
+            let afterDot = String(components[1].prefix(2))
+            return beforeDot + "." + afterDot
+        }
+        
+        return dotNormalized
     }
     
     private func updateAmountText() {

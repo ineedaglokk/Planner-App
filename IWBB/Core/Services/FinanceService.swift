@@ -1,850 +1,512 @@
 import Foundation
 import SwiftData
 
-// MARK: - Finance Service Protocol
+// MARK: - FinanceService Protocol
 
-protocol FinanceServiceProtocol {
-    // MARK: - Balance & Analytics
-    func calculateBalance(for period: DateInterval) async throws -> FinanceBalance
-    func generateFinancialReport(for period: DateInterval) async throws -> FinancialReport
-    func predictFutureBalance(days: Int) async throws -> [BalancePrediction]
-    func getSpendingTrend(for period: DateInterval) async throws -> SpendingTrend
+protocol FinanceServiceProtocol: ServiceProtocol {
+    // Основные операции с записями
+    func addExpenseEntry(name: String, amount: Decimal, notes: String?) async throws -> ExpenseEntry
+    func addIncomeEntry(name: String, amount: Decimal, notes: String?) async throws -> IncomeEntry
+    func updateExpenseEntry(_ entry: ExpenseEntry) async throws
+    func updateIncomeEntry(_ entry: IncomeEntry) async throws
+    func deleteExpenseEntry(_ entry: ExpenseEntry) async throws
+    func deleteIncomeEntry(_ entry: IncomeEntry) async throws
     
-    // MARK: - Budget Management
-    func createBudget(_ budget: Budget) async throws
-    func updateBudget(_ budget: Budget) async throws
-    func checkBudgetStatus(_ budget: Budget) async throws -> BudgetStatus
-    func getBudgetProgress(_ budget: Budget) async throws -> BudgetProgress
-    func sendBudgetNotificationIfNeeded(_ budget: Budget) async throws
+    // Получение данных для UI
+    func getExpenseEntries() async throws -> [ExpenseEntry]
+    func getIncomeEntries() async throws -> [IncomeEntry]
+    func getMonthlySummaries() async throws -> [MonthlySummary]
+    func getCurrentMonthSummary() async throws -> MonthlySummary
     
-    // MARK: - Currency Operations
-    func getCurrencyRates() async throws -> [String: Decimal]
-    func convertAmount(_ amount: Decimal, from: String, to: String) async throws -> Decimal
-    func updateExchangeRates() async throws
-    func getBaseCurrency() async throws -> Currency
+    // Состояние пустого экрана
+    func hasAnyFinancialData() async throws -> Bool
+    func initializeEmptyState() async throws
     
-    // MARK: - Transaction Processing
-    func processTransaction(_ transaction: Transaction) async throws
-    func bulkImportTransactions(_ transactions: [Transaction]) async throws
-    func categorizeTransaction(_ transaction: Transaction) async throws -> Category?
-    func detectDuplicateTransactions(_ transactions: [Transaction]) async throws -> [Transaction]
+    // Автоматический пересчет
+    func recalculateCurrentMonth() async throws -> MonthlySummary
+    func recalculateAllData() async throws -> [MonthlySummary]
     
-    // MARK: - Insights & Recommendations
-    func getSpendingInsights(for period: DateInterval) async throws -> [FinanceInsight]
-    func getBudgetRecommendations() async throws -> [BudgetRecommendation]
-    func getRecurringTransactionSuggestions() async throws -> [RecurringTransactionSuggestion]
+    // Статистика
+    func getTotalBalance() async throws -> Decimal
+    func getBalanceForMonth(_ month: String) async throws -> Decimal
+    func getExpensesByCategory(for month: String) async throws -> [CategoryStatistic]
+    func getIncomesByCategory(for month: String) async throws -> [CategoryStatistic]
+    
+    // Валидация
+    func validateAmount(_ amount: String) -> (isValid: Bool, decimal: Decimal?)
+    func validateEntryName(_ name: String) -> Bool
 }
 
-// MARK: - Supporting Data Structures
-
-struct FinancialReport {
-    let period: DateInterval
-    let totalIncome: Decimal
-    let totalExpenses: Decimal
-    let netIncome: Decimal
-    let topExpenseCategories: [CategorySummary]
-    let topIncomeCategories: [CategorySummary]
-    let budgetPerformance: [BudgetProgress]
-    let savingsRate: Double
-    let expenseGrowth: Double
-    let insights: [FinanceInsight]
-    let generatedAt: Date
-    
-    var isPositive: Bool { netIncome >= 0 }
-    var expenseToIncomeRatio: Double {
-        totalIncome > 0 ? Double(totalExpenses / totalIncome) : 0
-    }
-}
-
-struct BalancePrediction {
-    let date: Date
-    let predictedBalance: Decimal
-    let confidence: Double
-    let factors: [PredictionFactor]
-    
-    enum PredictionFactor {
-        case recurringIncome(Decimal)
-        case recurringExpense(Decimal)
-        case historicalTrend(Decimal)
-        case seasonalPattern(Decimal)
-    }
-}
-
-struct SpendingTrend {
-    let period: DateInterval
-    let dailyAverages: [Date: Decimal]
-    let weeklyTotals: [Date: Decimal]
-    let monthlyTotals: [Date: Decimal]
-    let trendDirection: TrendDirection
-    let changePercentage: Double
-    
-    enum TrendDirection {
-        case increasing
-        case decreasing
-        case stable
-    }
-}
-
-struct BudgetProgress {
-    let budget: Budget
-    let spent: Decimal
-    let remaining: Decimal
-    let progress: Double
-    let daysRemaining: Int
-    let recommendedDailySpending: Decimal
-    let isOnTrack: Bool
-    let projectedOverrun: Decimal?
-}
-
-struct FinanceInsight {
-    let type: InsightType
-    let title: String
-    let description: String
-    let impact: ImpactLevel
-    let actionable: Bool
-    let suggestedActions: [String]
-    let relatedCategory: Category?
-    
-    enum InsightType {
-        case overspending
-        case unusualExpense
-        case savingsOpportunity
-        case budgetOptimization
-        case incomeVariation
-        case expensePattern
-    }
-    
-    enum ImpactLevel {
-        case low
-        case medium
-        case high
-        case critical
-    }
-}
-
-struct BudgetRecommendation {
-    let category: Category?
-    let recommendedAmount: Decimal
-    let currentSpending: Decimal
-    let reasoning: String
-    let priority: RecommendationPriority
-    
-    enum RecommendationPriority {
-        case low
-        case medium
-        case high
-        case urgent
-    }
-}
-
-struct RecurringTransactionSuggestion {
-    let transaction: Transaction
-    let pattern: TransactionRecurringPattern
-    let confidence: Double
-    let nextOccurrence: Date
-    let estimatedSavings: Decimal?
-}
-
-// MARK: - Finance Service Implementation
+// MARK: - FinanceService Implementation
 
 final class FinanceService: FinanceServiceProtocol {
     
     // MARK: - Properties
     
     private let transactionRepository: TransactionRepositoryProtocol
-    private let categoryService: CategoryServiceProtocol
-    private let currencyService: CurrencyServiceProtocol
-    private let dataService: DataServiceProtocol
     private let notificationService: NotificationServiceProtocol
+    
+    var isInitialized: Bool = false
     
     // MARK: - Initialization
     
     init(
         transactionRepository: TransactionRepositoryProtocol,
-        categoryService: CategoryServiceProtocol,
-        currencyService: CurrencyServiceProtocol,
-        dataService: DataServiceProtocol,
         notificationService: NotificationServiceProtocol
     ) {
         self.transactionRepository = transactionRepository
-        self.categoryService = categoryService
-        self.currencyService = currencyService
-        self.dataService = dataService
         self.notificationService = notificationService
     }
     
-    // MARK: - Balance & Analytics
+    // MARK: - ServiceProtocol
     
-    func calculateBalance(for period: DateInterval) async throws -> FinanceBalance {
-        let transactions = try await transactionRepository.fetchTransactions(
-            from: period.start,
-            to: period.end
-        )
+    func initialize() async throws {
+        guard !isInitialized else { return }
         
-        let income = transactions
-            .filter { $0.type == .income }
-            .reduce(Decimal.zero) { $0 + $1.convertedAmount }
+        #if DEBUG
+        print("Initializing FinanceService...")
+        #endif
         
-        let expenses = transactions
-            .filter { $0.type == .expense }
-            .reduce(Decimal.zero) { $0 + $1.convertedAmount }
-        
-        // Calculate change from previous period
-        let previousPeriod = DateInterval(
-            start: Calendar.current.date(byAdding: .day, value: -Int(period.duration / 86400), to: period.start) ?? period.start,
-            duration: period.duration
-        )
-        
-        let previousBalance = try? await calculateBalanceForPeriod(previousPeriod)
-        let changeFromPrevious = previousBalance.map { income - expenses - $0.balance }
-        
-        return FinanceBalance(
-            income: income,
-            expenses: expenses,
-            period: period,
-            transactionCount: transactions.count,
-            changeFromPreviousPeriod: changeFromPrevious
-        )
-    }
-    
-    private func calculateBalanceForPeriod(_ period: DateInterval) async throws -> FinanceBalance {
-        let transactions = try await transactionRepository.fetchTransactions(
-            from: period.start,
-            to: period.end
-        )
-        
-        let income = transactions
-            .filter { $0.type == .income }
-            .reduce(Decimal.zero) { $0 + $1.convertedAmount }
-        
-        let expenses = transactions
-            .filter { $0.type == .expense }
-            .reduce(Decimal.zero) { $0 + $1.convertedAmount }
-        
-        return FinanceBalance(
-            income: income,
-            expenses: expenses,
-            period: period,
-            transactionCount: transactions.count
-        )
-    }
-    
-    func generateFinancialReport(for period: DateInterval) async throws -> FinancialReport {
-        async let balance = calculateBalance(for: period)
-        async let topExpenseCategories = transactionRepository.getTopCategories(for: period, type: .expense)
-        async let topIncomeCategories = transactionRepository.getTopCategories(for: period, type: .income)
-        async let budgets = fetchBudgetsForPeriod(period)
-        async let insights = getSpendingInsights(for: period)
-        
-        let balanceResult = try await balance
-        let expenseCategories = try await topExpenseCategories
-        let incomeCategories = try await topIncomeCategories
-        let budgetList = try await budgets
-        let reportInsights = try await insights
-        
-        // Calculate budget performance
-        var budgetPerformance: [BudgetProgress] = []
-        for budget in budgetList {
-            let progress = try await getBudgetProgress(budget)
-            budgetPerformance.append(progress)
+        // Проверяем, нужно ли создать пустое состояние
+        let hasData = try await hasAnyFinancialData()
+        if !hasData {
+            try await initializeEmptyState()
         }
         
-        // Calculate savings rate
-        let savingsRate = balanceResult.income > 0 ? 
-            Double((balanceResult.income - balanceResult.expenses) / balanceResult.income) * 100 : 0
+        isInitialized = true
         
-        // Calculate expense growth (compared to previous period)
-        let previousPeriodExpenses = try? await calculateExpensesForPreviousPeriod(period)
-        let expenseGrowth = calculateGrowthRate(
-            current: balanceResult.expenses,
-            previous: previousPeriodExpenses ?? 0
+        #if DEBUG
+        print("FinanceService initialized successfully")
+        #endif
+    }
+    
+    func cleanup() async {
+        #if DEBUG
+        print("Cleaning up FinanceService...")
+        #endif
+        
+        isInitialized = false
+        
+        #if DEBUG
+        print("FinanceService cleaned up")
+        #endif
+    }
+    
+    // MARK: - Expense Entry Operations
+    
+    func addExpenseEntry(name: String, amount: Decimal, notes: String? = nil) async throws -> ExpenseEntry {
+        guard validateEntryName(name) else {
+            throw AppError.validationFailed("Название траты не может быть пустым")
+        }
+        
+        guard amount > 0 else {
+            throw AppError.validationFailed("Сумма должна быть больше нуля")
+        }
+        
+        let entry = ExpenseEntry(
+            name: name,
+            amount: amount,
+            notes: notes
         )
         
-        return FinancialReport(
-            period: period,
-            totalIncome: balanceResult.income,
-            totalExpenses: balanceResult.expenses,
-            netIncome: balanceResult.balance,
-            topExpenseCategories: expenseCategories,
-            topIncomeCategories: incomeCategories,
-            budgetPerformance: budgetPerformance,
-            savingsRate: savingsRate,
-            expenseGrowth: expenseGrowth,
-            insights: reportInsights,
-            generatedAt: Date()
+        try await transactionRepository.saveExpenseEntry(entry)
+        
+        #if DEBUG
+        print("Added expense entry: \(name) - \(amount)")
+        #endif
+        
+        return entry
+    }
+    
+    func updateExpenseEntry(_ entry: ExpenseEntry) async throws {
+        guard validateEntryName(entry.name) else {
+            throw AppError.validationFailed("Название траты не может быть пустым")
+        }
+        
+        guard entry.amount > 0 else {
+            throw AppError.validationFailed("Сумма должна быть больше нуля")
+        }
+        
+        try await transactionRepository.updateExpenseEntry(entry)
+        
+        #if DEBUG
+        print("Updated expense entry: \(entry.name) - \(entry.amount)")
+        #endif
+    }
+    
+    func deleteExpenseEntry(_ entry: ExpenseEntry) async throws {
+        try await transactionRepository.deleteExpenseEntry(entry)
+        
+        #if DEBUG
+        print("Deleted expense entry: \(entry.name)")
+        #endif
+    }
+    
+    // MARK: - Income Entry Operations
+    
+    func addIncomeEntry(name: String, amount: Decimal, notes: String? = nil) async throws -> IncomeEntry {
+        guard validateEntryName(name) else {
+            throw AppError.validationFailed("Название поступления не может быть пустым")
+        }
+        
+        guard amount > 0 else {
+            throw AppError.validationFailed("Сумма должна быть больше нуля")
+        }
+        
+        let entry = IncomeEntry(
+            name: name,
+            amount: amount,
+            notes: notes
         )
+        
+        try await transactionRepository.saveIncomeEntry(entry)
+        
+        #if DEBUG
+        print("Added income entry: \(name) - \(amount)")
+        #endif
+        
+        return entry
     }
     
-    func predictFutureBalance(days: Int) async throws -> [BalancePrediction] {
-        let currentBalance = try await transactionRepository.getTotalBalance()
-        let recurringTransactions = try await transactionRepository.getRecurringTransactions()
-        let historicalData = try await getHistoricalSpendingPattern(days: 90)
-        
-        var predictions: [BalancePrediction] = []
-        var runningBalance = currentBalance
-        
-        let calendar = Calendar.current
-        
-        for day in 1...days {
-            guard let futureDate = calendar.date(byAdding: .day, value: day, to: Date()) else { continue }
-            
-            var dayPrediction: Decimal = 0
-            var factors: [BalancePrediction.PredictionFactor] = []
-            
-            // Check for recurring transactions on this day
-            for transaction in recurringTransactions {
-                if let nextOccurrence = transaction.recurringPattern?.nextDate(from: transaction.date),
-                   calendar.isDate(nextOccurrence, inSameDayAs: futureDate) {
-                    let impact = transaction.type == .income ? transaction.amount : -transaction.amount
-                    dayPrediction += impact
-                    
-                    if transaction.type == .income {
-                        factors.append(.recurringIncome(transaction.amount))
-                    } else {
-                        factors.append(.recurringExpense(transaction.amount))
-                    }
-                }
-            }
-            
-            // Apply historical trend
-            let weekday = calendar.component(.weekday, from: futureDate)
-            let historicalAverage = historicalData[weekday] ?? 0
-            dayPrediction += historicalAverage
-            factors.append(.historicalTrend(historicalAverage))
-            
-            runningBalance += dayPrediction
-            
-            let prediction = BalancePrediction(
-                date: futureDate,
-                predictedBalance: runningBalance,
-                confidence: calculatePredictionConfidence(for: day),
-                factors: factors
-            )
-            
-            predictions.append(prediction)
+    func updateIncomeEntry(_ entry: IncomeEntry) async throws {
+        guard validateEntryName(entry.name) else {
+            throw AppError.validationFailed("Название поступления не может быть пустым")
         }
         
-        return predictions
-    }
-    
-    func getSpendingTrend(for period: DateInterval) async throws -> SpendingTrend {
-        let trendData = try await transactionRepository.getTrendData(for: period)
-        
-        // Calculate daily averages
-        let dailyAverages = Dictionary(uniqueKeysWithValues: trendData.map { ($0.date, $0.expenses) })
-        
-        // Calculate weekly totals
-        let calendar = Calendar.current
-        let weeklyGrouped = Dictionary(grouping: trendData) { point in
-            calendar.dateInterval(of: .weekOfYear, for: point.date)?.start ?? point.date
+        guard entry.amount > 0 else {
+            throw AppError.validationFailed("Сумма должна быть больше нуля")
         }
         
-        let weeklyTotals = weeklyGrouped.mapValues { points in
-            points.reduce(Decimal.zero) { $0 + $1.expenses }
-        }
+        try await transactionRepository.updateIncomeEntry(entry)
         
-        // Calculate monthly totals
-        let monthlyGrouped = Dictionary(grouping: trendData) { point in
-            calendar.dateInterval(of: .month, for: point.date)?.start ?? point.date
-        }
-        
-        let monthlyTotals = monthlyGrouped.mapValues { points in
-            points.reduce(Decimal.zero) { $0 + $1.expenses }
-        }
-        
-        // Determine trend direction
-        let (trendDirection, changePercentage) = calculateTrendDirection(from: trendData)
-        
-        return SpendingTrend(
-            period: period,
-            dailyAverages: dailyAverages,
-            weeklyTotals: weeklyTotals,
-            monthlyTotals: monthlyTotals,
-            trendDirection: trendDirection,
-            changePercentage: changePercentage
-        )
+        #if DEBUG
+        print("Updated income entry: \(entry.name) - \(entry.amount)")
+        #endif
     }
     
-    // MARK: - Budget Management
-    
-    func createBudget(_ budget: Budget) async throws {
-        try budget.validate()
-        try await dataService.save(budget)
+    func deleteIncomeEntry(_ entry: IncomeEntry) async throws {
+        try await transactionRepository.deleteIncomeEntry(entry)
+        
+        #if DEBUG
+        print("Deleted income entry: \(entry.name)")
+        #endif
     }
     
-    func updateBudget(_ budget: Budget) async throws {
-        try budget.validate()
-        budget.updateTimestamp()
-        budget.markForSync()
-        try await dataService.save(budget)
+    // MARK: - Data Retrieval
+    
+    func getExpenseEntries() async throws -> [ExpenseEntry] {
+        return try await transactionRepository.fetchExpenseEntries()
     }
     
-    func checkBudgetStatus(_ budget: Budget) async throws -> BudgetStatus {
-        return budget.status
+    func getIncomeEntries() async throws -> [IncomeEntry] {
+        return try await transactionRepository.fetchIncomeEntries()
     }
     
-    func getBudgetProgress(_ budget: Budget) async throws -> BudgetProgress {
-        let calendar = Calendar.current
-        let now = Date()
-        
-        let daysRemaining = max(0, calendar.dateComponents([.day], from: now, to: budget.endDate).day ?? 0)
-        let recommendedDailySpending = daysRemaining > 0 ? budget.remaining / Decimal(daysRemaining) : 0
-        
-        let isOnTrack = budget.progress <= 1.0 && (daysRemaining == 0 || recommendedDailySpending >= 0)
-        
-        let projectedOverrun: Decimal? = {
-            if budget.averageDailySpending > 0 && daysRemaining > 0 {
-                let projectedTotal = budget.spent + (budget.averageDailySpending * Decimal(daysRemaining))
-                return projectedTotal > budget.limit ? projectedTotal - budget.limit : nil
-            }
-            return nil
-        }()
-        
-        return BudgetProgress(
-            budget: budget,
-            spent: budget.spent,
-            remaining: budget.remaining,
-            progress: budget.progress,
-            daysRemaining: daysRemaining,
-            recommendedDailySpending: recommendedDailySpending,
-            isOnTrack: isOnTrack,
-            projectedOverrun: projectedOverrun
-        )
+    func getMonthlySummaries() async throws -> [MonthlySummary] {
+        return try await transactionRepository.fetchMonthlySummaries()
     }
     
-    func sendBudgetNotificationIfNeeded(_ budget: Budget) async throws {
-        guard budget.shouldSendWarning else { return }
+    func getCurrentMonthSummary() async throws -> MonthlySummary {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        let currentMonth = formatter.string(from: Date())
         
-        let progress = try await getBudgetProgress(budget)
-        
-        let title = "Предупреждение о бюджете"
-        let message: String
-        
-        if budget.isOverBudget {
-            message = "Бюджет '\(budget.name)' превышен на \(budget.formattedSpent)"
+        if let summary = try await transactionRepository.fetchMonthlySummary(for: currentMonth) {
+            return summary
         } else {
-            let percentage = Int(progress.progress * 100)
-            message = "Бюджет '\(budget.name)' использован на \(percentage)%"
-        }
-        
-        await notificationService.scheduleNotification(
-            title: title,
-            body: message,
-            identifier: "budget_warning_\(budget.id.uuidString)",
-            category: "BUDGET_WARNING"
-        )
-        
-        budget.markNotificationSent()
-        try await dataService.save(budget)
-    }
-    
-    // MARK: - Currency Operations
-    
-    func getCurrencyRates() async throws -> [String: Decimal] {
-        return try await currencyService.getAllExchangeRates()
-    }
-    
-    func convertAmount(_ amount: Decimal, from fromCurrency: String, to toCurrency: String) async throws -> Decimal {
-        return try await currencyService.convertAmount(amount, from: fromCurrency, to: toCurrency)
-    }
-    
-    func updateExchangeRates() async throws {
-        try await currencyService.updateExchangeRates()
-    }
-    
-    func getBaseCurrency() async throws -> Currency {
-        return try await currencyService.getBaseCurrency()
-    }
-    
-    // MARK: - Transaction Processing
-    
-    func processTransaction(_ transaction: Transaction) async throws {
-        // Validate transaction
-        try transaction.validate()
-        
-        // Auto-categorize if no category set
-        if transaction.category == nil {
-            transaction.category = try await categorizeTransaction(transaction)
-        }
-        
-        // Save transaction
-        try await transactionRepository.save(transaction)
-        
-        // Check if this affects any budgets
-        if let category = transaction.category,
-           transaction.type == .expense {
-            let budgets = try await getBudgetsForCategory(category)
-            for budget in budgets {
-                try await sendBudgetNotificationIfNeeded(budget)
-            }
-        }
-        
-        // Create next recurring transaction if needed
-        if transaction.isRecurring,
-           let nextTransaction = transaction.createNextRecurringTransaction() {
-            try await transactionRepository.save(nextTransaction)
+            // Создаем новую сводку для текущего месяца
+            let newSummary = MonthlySummary.createCurrentMonth()
+            try await transactionRepository.saveMonthlySummary(newSummary)
+            return newSummary
         }
     }
     
-    func bulkImportTransactions(_ transactions: [Transaction]) async throws {
-        // Detect and filter duplicates
-        let duplicates = try await detectDuplicateTransactions(transactions)
-        let uniqueTransactions = transactions.filter { transaction in
-            !duplicates.contains { $0.id == transaction.id }
-        }
+    // MARK: - Empty State Management
+    
+    func hasAnyFinancialData() async throws -> Bool {
+        let expenseEntries = try await getExpenseEntries()
+        let incomeEntries = try await getIncomeEntries()
+        let summaries = try await getMonthlySummaries()
         
-        // Auto-categorize transactions
-        for transaction in uniqueTransactions {
-            if transaction.category == nil {
-                transaction.category = try await categorizeTransaction(transaction)
-            }
-        }
-        
-        // Batch save
-        try await transactionRepository.batchSave(uniqueTransactions)
+        return !expenseEntries.isEmpty || !incomeEntries.isEmpty || !summaries.isEmpty
     }
     
-    func categorizeTransaction(_ transaction: Transaction) async throws -> Category? {
-        return await categoryService.suggestCategory(
-            for: transaction.title,
-            amount: transaction.amount
-        )
+    func initializeEmptyState() async throws {
+        // Создаем сводку для текущего месяца с нулевыми значениями
+        let currentSummary = MonthlySummary.createCurrentMonth()
+        try await transactionRepository.saveMonthlySummary(currentSummary)
+        
+        #if DEBUG
+        print("Initialized empty finance state")
+        #endif
     }
     
-    func detectDuplicateTransactions(_ transactions: [Transaction]) async throws -> [Transaction] {
-        var duplicates: [Transaction] = []
+    // MARK: - Recalculation
+    
+    func recalculateCurrentMonth() async throws -> MonthlySummary {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        let currentMonth = formatter.string(from: Date())
         
-        for transaction in transactions {
-            // Check for existing transactions with same amount, date, and description
-            let existingTransactions = try await transactionRepository.fetchTransactions(
-                from: Calendar.current.date(byAdding: .day, value: -1, to: transaction.date),
-                to: Calendar.current.date(byAdding: .day, value: 1, to: transaction.date)
-            )
-            
-            let isDuplicate = existingTransactions.contains { existing in
-                existing.amount == transaction.amount &&
-                existing.type == transaction.type &&
-                existing.title == transaction.title &&
-                Calendar.current.isDate(existing.date, inSameDayAs: transaction.date)
-            }
-            
-            if isDuplicate {
-                duplicates.append(transaction)
-            }
-        }
-        
-        return duplicates
+        return try await transactionRepository.recalculateMonthlySummary(for: currentMonth)
     }
     
-    // MARK: - Insights & Recommendations
-    
-    func getSpendingInsights(for period: DateInterval) async throws -> [FinanceInsight] {
-        var insights: [FinanceInsight] = []
-        
-        // Get spending data
-        let currentBalance = try await calculateBalance(for: period)
-        let previousPeriod = DateInterval(
-            start: Calendar.current.date(byAdding: .day, value: -Int(period.duration / 86400), to: period.start) ?? period.start,
-            duration: period.duration
-        )
-        let previousBalance = try? await calculateBalance(for: previousPeriod)
-        
-        // Overspending insight
-        if currentBalance.expenses > currentBalance.income {
-            insights.append(FinanceInsight(
-                type: .overspending,
-                title: "Превышение расходов",
-                description: "Ваши расходы превышают доходы на \((currentBalance.expenses - currentBalance.income).formatted(.currency(code: "RUB")))",
-                impact: .high,
-                actionable: true,
-                suggestedActions: [
-                    "Проанализируйте крупные траты",
-                    "Создайте бюджет для контроля расходов",
-                    "Найдите возможности для экономии"
-                ],
-                relatedCategory: nil
-            ))
-        }
-        
-        // Expense increase insight
-        if let previousBalance = previousBalance {
-            let expenseIncrease = currentBalance.expenses - previousBalance.expenses
-            let increasePercentage = previousBalance.expenses > 0 ? 
-                Double(expenseIncrease / previousBalance.expenses) * 100 : 0
-            
-            if increasePercentage > 20 {
-                insights.append(FinanceInsight(
-                    type: .expensePattern,
-                    title: "Значительный рост расходов",
-                    description: "Расходы выросли на \(Int(increasePercentage))% по сравнению с предыдущим периодом",
-                    impact: .medium,
-                    actionable: true,
-                    suggestedActions: [
-                        "Проверьте категории с наибольшим ростом",
-                        "Установите бюджетные лимиты",
-                        "Отслеживайте необычные траты"
-                    ],
-                    relatedCategory: nil
-                ))
-            }
-        }
-        
-        // Category-specific insights
-        let topCategories = try await transactionRepository.getTopCategories(for: period, type: .expense)
-        
-        for categoryStats in topCategories.prefix(3) {
-            let categoryPercentage = categoryStats.percentage
-            
-            if categoryPercentage > 40 {
-                insights.append(FinanceInsight(
-                    type: .budgetOptimization,
-                    title: "Высокие траты в категории",
-                    description: "Категория '\(categoryStats.category.name)' составляет \(Int(categoryPercentage))% от всех расходов",
-                    impact: .medium,
-                    actionable: true,
-                    suggestedActions: [
-                        "Создайте бюджет для этой категории",
-                        "Найдите способы экономии",
-                        "Сравните с рекомендованными нормами"
-                    ],
-                    relatedCategory: categoryStats.category
-                ))
-            }
-        }
-        
-        return insights
+    func recalculateAllData() async throws -> [MonthlySummary] {
+        return try await transactionRepository.recalculateAllMonthlySummaries()
     }
     
-    func getBudgetRecommendations() async throws -> [BudgetRecommendation] {
-        var recommendations: [BudgetRecommendation] = []
-        
-        // Get spending data for last 3 months
-        let calendar = Calendar.current
-        let endDate = Date()
-        let startDate = calendar.date(byAdding: .month, value: -3, to: endDate) ?? endDate
-        let period = DateInterval(start: startDate, end: endDate)
-        
-        let topCategories = try await transactionRepository.getTopCategories(for: period, type: .expense)
-        
-        for categoryStats in topCategories {
-            let averageMonthlySpending = categoryStats.totalAmount / 3 // 3 months average
-            let recommendedBudget = averageMonthlySpending * 1.1 // Add 10% buffer
-            
-            let recommendation = BudgetRecommendation(
-                category: categoryStats.category,
-                recommendedAmount: recommendedBudget,
-                currentSpending: averageMonthlySpending,
-                reasoning: "На основе среднего расхода за последние 3 месяца с буфером 10%",
-                priority: categoryStats.percentage > 20 ? .high : .medium
-            )
-            
-            recommendations.append(recommendation)
-        }
-        
-        return recommendations.sorted { $0.priority.rawValue > $1.priority.rawValue }
+    // MARK: - Statistics
+    
+    func getTotalBalance() async throws -> Decimal {
+        let summaries = try await getMonthlySummaries()
+        return summaries.reduce(0) { $0 + $1.totalSavings }
     }
     
-    func getRecurringTransactionSuggestions() async throws -> [RecurringTransactionSuggestion] {
-        let allTransactions = try await transactionRepository.fetchTransactions()
-        var suggestions: [RecurringTransactionSuggestion] = []
+    func getBalanceForMonth(_ month: String) async throws -> Decimal {
+        return try await transactionRepository.getBalanceForMonth(month)
+    }
+    
+    func getExpensesByCategory(for month: String) async throws -> [CategoryStatistic] {
+        let expenses = try await transactionRepository.fetchExpenseEntriesForMonth(month)
         
-        // Group transactions by title and amount
-        let grouped = Dictionary(grouping: allTransactions) { transaction in
-            "\(transaction.title)_\(transaction.amount)"
-        }
+        var categoryStats: [UUID: CategoryStatistic] = [:]
         
-        for (_, transactions) in grouped {
-            guard transactions.count >= 3 else { continue }
-            
-            // Check if transactions occur at regular intervals
-            let sortedTransactions = transactions.sorted { $0.date < $1.date }
-            
-            if let pattern = detectRecurringPattern(in: sortedTransactions) {
-                let confidence = calculatePatternConfidence(transactions: sortedTransactions, pattern: pattern)
-                
-                if confidence > 0.7 {
-                    let nextOccurrence = pattern.nextDate(from: sortedTransactions.last?.date ?? Date()) ?? Date()
-                    
-                    let suggestion = RecurringTransactionSuggestion(
-                        transaction: sortedTransactions.first!,
-                        pattern: pattern,
-                        confidence: confidence,
-                        nextOccurrence: nextOccurrence,
-                        estimatedSavings: nil
+        for expense in expenses {
+            if let category = expense.category {
+                if var stat = categoryStats[category.id] {
+                    stat.amount += expense.amount
+                    stat.count += 1
+                    categoryStats[category.id] = stat
+                } else {
+                    categoryStats[category.id] = CategoryStatistic(
+                        category: category,
+                        amount: expense.amount,
+                        count: 1
                     )
-                    
-                    suggestions.append(suggestion)
                 }
             }
         }
         
-        return suggestions.sorted { $0.confidence > $1.confidence }
+        return Array(categoryStats.values).sorted { $0.amount > $1.amount }
+    }
+    
+    func getIncomesByCategory(for month: String) async throws -> [CategoryStatistic] {
+        let incomes = try await transactionRepository.fetchIncomeEntriesForMonth(month)
+        
+        var categoryStats: [UUID: CategoryStatistic] = [:]
+        
+        for income in incomes {
+            if let category = income.category {
+                if var stat = categoryStats[category.id] {
+                    stat.amount += income.amount
+                    stat.count += 1
+                    categoryStats[category.id] = stat
+                } else {
+                    categoryStats[category.id] = CategoryStatistic(
+                        category: category,
+                        amount: income.amount,
+                        count: 1
+                    )
+                }
+            }
+        }
+        
+        return Array(categoryStats.values).sorted { $0.amount > $1.amount }
+    }
+    
+    // MARK: - Validation
+    
+    func validateAmount(_ amount: String) -> (isValid: Bool, decimal: Decimal?) {
+        // Убираем пробелы
+        let trimmed = amount.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmed.isEmpty else {
+            return (false, nil)
+        }
+        
+        // Заменяем запятую на точку для десятичных чисел
+        let normalized = trimmed.replacingOccurrences(of: ",", with: ".")
+        
+        // Проверяем, что строка содержит только цифры, точку и максимум одну точку
+        let allowedCharacters = CharacterSet(charactersIn: "0123456789.")
+        guard normalized.rangeOfCharacter(from: allowedCharacters.inverted) == nil else {
+            return (false, nil)
+        }
+        
+        // Проверяем количество точек
+        let dotCount = normalized.components(separatedBy: ".").count - 1
+        guard dotCount <= 1 else {
+            return (false, nil)
+        }
+        
+        // Проверяем количество знаков после запятой
+        if let dotRange = normalized.range(of: ".") {
+            let afterDot = String(normalized[dotRange.upperBound...])
+            guard afterDot.count <= 2 else {
+                return (false, nil)
+            }
+        }
+        
+        // Пробуем преобразовать в Decimal
+        guard let decimal = Decimal(string: normalized), decimal > 0 else {
+            return (false, nil)
+        }
+        
+        return (true, decimal)
+    }
+    
+    func validateEntryName(_ name: String) -> Bool {
+        return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
 
-// MARK: - Private Helper Methods
+// MARK: - Finance Service Extensions
 
-private extension FinanceService {
+extension FinanceService {
     
-    func fetchBudgetsForPeriod(_ period: DateInterval) async throws -> [Budget] {
-        let descriptor = FetchDescriptor<Budget>(
-            predicate: #Predicate { budget in
-                budget.isActive &&
-                budget.startDate <= period.end &&
-                budget.endDate >= period.start
-            }
-        )
+    /// Создает демонстрационные данные для тестирования
+    func createSampleData() async throws {
+        // Создаем несколько записей расходов
+        let expenseNames = [
+            "Продукты в магазине",
+            "Проезд в метро",
+            "Обед в кафе",
+            "Покупка книги",
+            "Оплата интернета"
+        ]
         
-        return try dataService.fetch(Budget.self, predicate: descriptor.predicate).get()
-    }
-    
-    func getBudgetsForCategory(_ category: Category) async throws -> [Budget] {
-        let descriptor = FetchDescriptor<Budget>(
-            predicate: #Predicate { budget in
-                budget.isActive && budget.category?.id == category.id
-            }
-        )
+        let expenseAmounts: [Decimal] = [2500, 120, 650, 800, 900]
         
-        return try dataService.fetch(Budget.self, predicate: descriptor.predicate).get()
-    }
-    
-    func calculateExpensesForPreviousPeriod(_ period: DateInterval) async throws -> Decimal {
-        let previousPeriod = DateInterval(
-            start: Calendar.current.date(byAdding: .day, value: -Int(period.duration / 86400), to: period.start) ?? period.start,
-            duration: period.duration
-        )
+        for (name, amount) in zip(expenseNames, expenseAmounts) {
+            _ = try await addExpenseEntry(name: name, amount: amount)
+        }
         
-        let balance = try await calculateBalance(for: previousPeriod)
-        return balance.expenses
+        // Создаем несколько записей доходов
+        let incomeNames = [
+            "Зарплата",
+            "Фриланс проект",
+            "Возврат долга"
+        ]
+        
+        let incomeAmounts: [Decimal] = [85000, 15000, 5000]
+        
+        for (name, amount) in zip(incomeNames, incomeAmounts) {
+            _ = try await addIncomeEntry(name: name, amount: amount)
+        }
+        
+        // Пересчитываем все данные
+        _ = try await recalculateAllData()
+        
+        #if DEBUG
+        print("Created sample finance data")
+        #endif
     }
     
-    func calculateGrowthRate(current: Decimal, previous: Decimal) -> Double {
-        guard previous > 0 else { return 0 }
-        return Double((current - previous) / previous) * 100
+    /// Очищает все финансовые данные
+    func clearAllData() async throws {
+        let expenseEntries = try await getExpenseEntries()
+        for entry in expenseEntries {
+            try await deleteExpenseEntry(entry)
+        }
+        
+        let incomeEntries = try await getIncomeEntries()
+        for entry in incomeEntries {
+            try await deleteIncomeEntry(entry)
+        }
+        
+        let summaries = try await getMonthlySummaries()
+        for summary in summaries {
+            try await transactionRepository.deleteMonthlySummary(summary)
+        }
+        
+        // Заново инициализируем пустое состояние
+        try await initializeEmptyState()
+        
+        #if DEBUG
+        print("Cleared all finance data")
+        #endif
     }
     
-    func getHistoricalSpendingPattern(days: Int) async throws -> [Int: Decimal] {
+    /// Экспортирует данные в CSV формат
+    func exportToCSV() async throws -> String {
+        let expenses = try await getExpenseEntries()
+        let incomes = try await getIncomeEntries()
+        
+        var csv = "Тип,Название,Сумма,Дата,Месяц,Заметки\n"
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        for expense in expenses {
+            let date = dateFormatter.string(from: expense.date)
+            let notes = expense.notes ?? ""
+            csv += "Расход,\(expense.name),\(expense.amount),\(date),\(expense.monthDisplayName),\(notes)\n"
+        }
+        
+        for income in incomes {
+            let date = dateFormatter.string(from: income.date)
+            let notes = income.notes ?? ""
+            csv += "Поступление,\(income.name),\(income.amount),\(date),\(income.monthDisplayName),\(notes)\n"
+        }
+        
+        return csv
+    }
+    
+    /// Получает статистику за период
+    func getStatisticsForPeriod(months: Int = 6) async throws -> FinancePeriodStatistics {
         let calendar = Calendar.current
         let endDate = Date()
-        let startDate = calendar.date(byAdding: .day, value: -days, to: endDate) ?? endDate
+        let startDate = calendar.date(byAdding: .month, value: -months, to: endDate) ?? endDate
         
-        let transactions = try await transactionRepository.fetchTransactions(
-            from: startDate,
-            to: endDate,
-            type: .expense
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        
+        var monthlyData: [String: (income: Decimal, expenses: Decimal)] = [:]
+        
+        var currentDate = startDate
+        while currentDate <= endDate {
+            let monthKey = formatter.string(from: currentDate)
+            let income = try await transactionRepository.getTotalIncomeForMonth(monthKey)
+            let expenses = try await transactionRepository.getTotalExpensesForMonth(monthKey)
+            
+            monthlyData[monthKey] = (income, expenses)
+            
+            currentDate = calendar.date(byAdding: .month, value: 1, to: currentDate) ?? currentDate
+        }
+        
+        return FinancePeriodStatistics(
+            period: "\(months) месяцев",
+            monthlyData: monthlyData,
+            totalIncome: monthlyData.values.reduce(0) { $0 + $1.income },
+            totalExpenses: monthlyData.values.reduce(0) { $0 + $1.expenses }
         )
-        
-        // Group by weekday
-        let groupedByWeekday = Dictionary(grouping: transactions) { transaction in
-            calendar.component(.weekday, from: transaction.date)
-        }
-        
-        var averages: [Int: Decimal] = [:]
-        
-        for (weekday, transactions) in groupedByWeekday {
-            let total = transactions.reduce(Decimal.zero) { $0 + $1.convertedAmount }
-            let weeksCount = days / 7
-            averages[weekday] = weeksCount > 0 ? total / Decimal(weeksCount) : 0
-        }
-        
-        return averages
-    }
-    
-    func calculatePredictionConfidence(for dayOffset: Int) -> Double {
-        // Confidence decreases over time
-        let baseConfidence = 0.95
-        let decayRate = 0.02
-        return max(0.3, baseConfidence - (Double(dayOffset) * decayRate))
-    }
-    
-    func calculateTrendDirection(from trendData: [BalancePoint]) -> (SpendingTrend.TrendDirection, Double) {
-        guard trendData.count >= 2 else { return (.stable, 0) }
-        
-        let first = trendData.first!.expenses
-        let last = trendData.last!.expenses
-        
-        let changePercentage = first > 0 ? Double((last - first) / first) * 100 : 0
-        
-        let direction: SpendingTrend.TrendDirection
-        if abs(changePercentage) < 5 {
-            direction = .stable
-        } else if changePercentage > 0 {
-            direction = .increasing
-        } else {
-            direction = .decreasing
-        }
-        
-        return (direction, changePercentage)
-    }
-    
-    func detectRecurringPattern(in transactions: [Transaction]) -> TransactionRecurringPattern? {
-        guard transactions.count >= 3 else { return nil }
-        
-        let calendar = Calendar.current
-        
-        // Check for monthly pattern
-        var monthlyIntervals: [Int] = []
-        for i in 1..<transactions.count {
-            let interval = calendar.dateComponents([.month], from: transactions[i-1].date, to: transactions[i].date).month ?? 0
-            monthlyIntervals.append(interval)
-        }
-        
-        if monthlyIntervals.allSatisfy({ $0 == 1 }) {
-            return TransactionRecurringPattern(frequency: .monthly, interval: 1, endDate: nil, maxOccurrences: nil)
-        }
-        
-        // Check for weekly pattern
-        var weeklyIntervals: [Int] = []
-        for i in 1..<transactions.count {
-            let interval = calendar.dateComponents([.weekOfYear], from: transactions[i-1].date, to: transactions[i].date).weekOfYear ?? 0
-            weeklyIntervals.append(interval)
-        }
-        
-        if weeklyIntervals.allSatisfy({ $0 == 1 }) {
-            return TransactionRecurringPattern(frequency: .weekly, interval: 1, endDate: nil, maxOccurrences: nil)
-        }
-        
-        return nil
-    }
-    
-    func calculatePatternConfidence(transactions: [Transaction], pattern: TransactionRecurringPattern) -> Double {
-        let expectedIntervals = transactions.count - 1
-        var matchingIntervals = 0
-        
-        let calendar = Calendar.current
-        
-        for i in 1..<transactions.count {
-            let actualInterval: Int
-            
-            switch pattern.frequency {
-            case .monthly:
-                actualInterval = calendar.dateComponents([.month], from: transactions[i-1].date, to: transactions[i].date).month ?? 0
-            case .weekly:
-                actualInterval = calendar.dateComponents([.weekOfYear], from: transactions[i-1].date, to: transactions[i].date).weekOfYear ?? 0
-            case .daily:
-                actualInterval = calendar.dateComponents([.day], from: transactions[i-1].date, to: transactions[i].date).day ?? 0
-            case .yearly:
-                actualInterval = calendar.dateComponents([.year], from: transactions[i-1].date, to: transactions[i].date).year ?? 0
-            }
-            
-            if actualInterval == pattern.interval {
-                matchingIntervals += 1
-            }
-        }
-        
-        return expectedIntervals > 0 ? Double(matchingIntervals) / Double(expectedIntervals) : 0
     }
 }
 
-// MARK: - Data Service Extension
+// MARK: - Supporting Types
 
-extension DataServiceProtocol {
-    func fetch<T: PersistentModel>(_ type: T.Type, predicate: Predicate<T>?) -> Result<[T], Error> {
-        do {
-            let results = try await fetch(type, predicate: predicate)
-            return .success(results)
-        } catch {
-            return .failure(error)
-        }
+struct FinancePeriodStatistics {
+    let period: String
+    let monthlyData: [String: (income: Decimal, expenses: Decimal)]
+    let totalIncome: Decimal
+    let totalExpenses: Decimal
+    
+    var totalSavings: Decimal {
+        return totalIncome - totalExpenses
+    }
+    
+    var averageMonthlyIncome: Decimal {
+        guard !monthlyData.isEmpty else { return 0 }
+        return totalIncome / Decimal(monthlyData.count)
+    }
+    
+    var averageMonthlyExpenses: Decimal {
+        guard !monthlyData.isEmpty else { return 0 }
+        return totalExpenses / Decimal(monthlyData.count)
+    }
+    
+    var savingsRate: Double {
+        guard totalIncome > 0 else { return 0 }
+        return Double(totalSavings / totalIncome) * 100
     }
 } 

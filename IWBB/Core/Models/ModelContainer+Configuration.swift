@@ -36,6 +36,11 @@ extension ModelContainer {
             FinancialInsight.self,
             BudgetCategory.self,
             
+            // 🆕 Новые модели для подробных записей
+            ExpenseEntry.self,
+            IncomeEntry.self,
+            MonthlySummary.self,
+            
             // Модели геймификации
             Achievement.self
         ])
@@ -71,6 +76,7 @@ extension ModelContainer {
             Task.self, Goal.self, GoalMilestone.self, GoalProgress.self,
             Transaction.self, Budget.self, Currency.self,
             FinancialGoal.self, BillReminder.self, FinancialInsight.self, BudgetCategory.self,
+            ExpenseEntry.self, IncomeEntry.self, MonthlySummary.self,
             Achievement.self
         ])
         
@@ -101,6 +107,7 @@ extension ModelContainer {
             Task.self, Goal.self, GoalMilestone.self, GoalProgress.self,
             Transaction.self, Budget.self, Currency.self,
             FinancialGoal.self, BillReminder.self, FinancialInsight.self, BudgetCategory.self,
+            ExpenseEntry.self, IncomeEntry.self, MonthlySummary.self,
             Achievement.self
         ])
         

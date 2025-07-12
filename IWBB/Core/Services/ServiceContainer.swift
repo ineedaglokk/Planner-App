@@ -238,10 +238,7 @@ final class ServiceContainer: ServiceContainerProtocol {
             return repository
         }
         
-        let repository = TransactionRepository(
-            modelContext: modelContainer.mainContext,
-            syncService: SyncService() // Placeholder, нужно будет реализовать SyncService
-        )
+        let repository = TransactionRepository(dataService: dataService)
         _transactionRepository = repository
         
         return repository
@@ -254,9 +251,6 @@ final class ServiceContainer: ServiceContainerProtocol {
         
         let service = FinanceService(
             transactionRepository: transactionRepository,
-            categoryService: categoryService,
-            currencyService: currencyService,
-            dataService: dataService,
             notificationService: notificationService
         )
         _financeService = service

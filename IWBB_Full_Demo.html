@@ -1,0 +1,2118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IWBB - Демонстрация приложения</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2196F3 0%, #21CBF3 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 18px;
+        }
+
+        .main-nav {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            overflow-x: auto;
+        }
+
+        .main-nav-tab {
+            padding: 15px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .main-nav-tab:hover {
+            background: #e9ecef;
+        }
+
+        .main-nav-tab.active {
+            background: white;
+            border-bottom-color: #2196F3;
+            color: #2196F3;
+        }
+
+        .content {
+            padding: 20px;
+            min-height: 500px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .stat-card .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stat-card .label {
+            font-size: 14px;
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .task-item {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .task-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .task-checkbox {
+            width: 22px;
+            height: 22px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .task-checkbox.checked {
+            background: #28a745;
+            border-color: #28a745;
+        }
+
+        .task-checkbox.checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .task-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .priority-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-high {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .priority-medium {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .priority-low {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .habit-card {
+            background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .habit-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .habit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .habit-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .habit-streak {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .habit-progress {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .habit-progress-fill {
+            background: white;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .habit-days {
+            display: flex;
+            gap: 6px;
+        }
+
+        .habit-day {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .habit-day.completed {
+            background: white;
+            color: #4CAF50;
+        }
+
+        .habit-day:hover {
+            transform: scale(1.1);
+        }
+
+        .achievement-card {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA000 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .achievement-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .achievement-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .achievement-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .achievement-description {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        /* Табы и скрытие контента */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Финансовые карточки */
+        .finance-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .finance-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .finance-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .finance-card.income {
+            border-left: 5px solid #28a745;
+        }
+
+        .finance-card.expense {
+            border-left: 5px solid #dc3545;
+        }
+
+        .finance-card.balance {
+            border-left: 5px solid #2196F3;
+        }
+
+        .finance-card.savings {
+            border-left: 5px solid #ffc107;
+        }
+
+        .finance-amount {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .finance-amount.positive {
+            color: #28a745;
+        }
+
+        .finance-amount.negative {
+            color: #dc3545;
+        }
+
+        .finance-label {
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        /* Пустое состояние */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+
+        .empty-state-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        /* Таблицы */
+        .finance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .finance-table th,
+        .finance-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .finance-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .finance-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .close {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close:hover {
+            color: #2196F3;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        /* Убираем спиннеры у number input */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Переключатель состояний */
+        .state-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .state-toggle button {
+            padding: 8px 16px;
+            border: 2px solid #2196F3;
+            background: white;
+            color: #2196F3;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .state-toggle button:first-child {
+            border-radius: 20px 0 0 20px;
+        }
+
+        .state-toggle button:last-child {
+            border-radius: 0 20px 20px 0;
+            border-left: none;
+        }
+
+        .state-toggle button.active {
+            background: #2196F3;
+            color: white;
+        }
+
+        /* Заголовок с иконкой */
+        .section-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Кнопка "Назад" */
+        .back-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        /* Действия с элементами */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.edit {
+            background: #2196F3;
+            color: white;
+        }
+
+        .action-btn.delete {
+            background: #dc3545;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Уведомления */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            z-index: 1001;
+            display: none;
+        }
+
+        .notification.success {
+            background: #28a745;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 IWBB <span style="font-size: 24px; opacity: 0.8;">I Will Be Better</span></h1>
+            <p>Полный планер для достижения целей и управления жизнью</p>
+        </div>
+
+        <div class="main-nav">
+            <div class="main-nav-tab active" onclick="showMainTab('dashboard')">
+                <span>📊</span> Дашборд
+            </div>
+            <div class="main-nav-tab" onclick="showMainTab('tasks')">
+                <span>✅</span> Задачи
+            </div>
+            <div class="main-nav-tab" onclick="showMainTab('habits')">
+                <span>🎯</span> Привычки
+            </div>
+            <div class="main-nav-tab" onclick="showMainTab('projects')">
+                <span>📁</span> Проекты
+            </div>
+            <div class="main-nav-tab" onclick="showMainTab('finance')">
+                <span>💰</span> Финансы
+            </div>
+            <div class="main-nav-tab" onclick="showMainTab('gamification')">
+                <span>🏆</span> Достижения
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Дашборд -->
+            <div id="dashboard" class="tab-content active">
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="icon">✅</div>
+                        <div class="value" id="completedTasks">12</div>
+                        <div class="label">Задач выполнено</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">🎯</div>
+                        <div class="value">5</div>
+                        <div class="label">Привычек активно</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">📁</div>
+                        <div class="value">3</div>
+                        <div class="label">Проектов в работе</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">💰</div>
+                        <div class="value" id="currentBalance">23 750 ₽</div>
+                        <div class="label">Текущий баланс</div>
+                    </div>
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>📅 Задачи на сегодня</h3>
+                        <div class="task-item">
+                            <div class="task-checkbox checked" onclick="toggleTask(this)"></div>
+                            <div class="task-content">
+                                <div class="task-title">Завершить отчет</div>
+                                <div class="task-meta">До 18:00 • <span class="priority-badge priority-high">Высокий</span></div>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox" onclick="toggleTask(this)"></div>
+                            <div class="task-content">
+                                <div class="task-title">Встреча с командой</div>
+                                <div class="task-meta">15:00 • <span class="priority-badge priority-medium">Средний</span></div>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox" onclick="toggleTask(this)"></div>
+                            <div class="task-content">
+                                <div class="task-title">Планирование недели</div>
+                                <div class="task-meta">Вечер • <span class="priority-badge priority-low">Низкий</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>🎯 Привычки</h3>
+                        <div class="habit-card">
+                            <div class="habit-header">
+                                <div class="habit-title">💪 Утренняя зарядка</div>
+                                <div class="habit-streak">🔥 15 дней</div>
+                            </div>
+                            <div class="habit-progress">
+                                <div class="habit-progress-fill" style="width: 100%"></div>
+                            </div>
+                            <div class="habit-days">
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">П</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">В</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">С</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">Ч</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">П</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">С</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">В</div>
+                            </div>
+                        </div>
+                        <div class="habit-card" style="background: linear-gradient(135deg, #9C27B0 0%, #BA68C8 100%);">
+                            <div class="habit-header">
+                                <div class="habit-title">📚 Чтение книг</div>
+                                <div class="habit-streak">🔥 8 дней</div>
+                            </div>
+                            <div class="habit-progress">
+                                <div class="habit-progress-fill" style="width: 80%"></div>
+                            </div>
+                            <div class="habit-days">
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">П</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">В</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">С</div>
+                                <div class="habit-day" onclick="toggleHabitDay(this)">Ч</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">П</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">С</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">В</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>💰 Финансы</h3>
+                        <div class="finance-summary">
+                            <div class="finance-card income">
+                                <div class="finance-amount">0 ₽</div>
+                                <div class="finance-label">Доходы</div>
+                            </div>
+                            <div class="finance-card expense">
+                                <div class="finance-amount">0 ₽</div>
+                                <div class="finance-label">Расходы</div>
+                            </div>
+                            <div class="finance-card balance">
+                                <div class="finance-amount">0 ₽</div>
+                                <div class="finance-label">Баланс</div>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="dashboardFinanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Финансы -->
+            <div id="finance" class="tab-content">
+                <div class="section-header">
+                    <h2 class="section-title">💰 Финансовый планер</h2>
+                    <div>
+                        <button class="btn" onclick="showModal('addTransactionModal')">
+                            ➕ Добавить транзакцию
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Финансовые данные -->
+                <div id="financeData">
+                    <div class="finance-summary">
+                        <div class="finance-card income">
+                            <div class="finance-amount" id="totalIncome">0 ₽</div>
+                            <div class="finance-label">Доходы</div>
+                        </div>
+                        <div class="finance-card expense">
+                            <div class="finance-amount" id="totalExpense">0 ₽</div>
+                            <div class="finance-label">Расходы</div>
+                        </div>
+                        <div class="finance-card balance">
+                            <div class="finance-amount" id="totalBalance">0 ₽</div>
+                            <div class="finance-label">Баланс</div>
+                        </div>
+                        <div class="finance-card savings">
+                            <div class="finance-amount" id="totalSavings">0 ₽</div>
+                            <div class="finance-label">Сбережения</div>
+                        </div>
+                    </div>
+
+                    <div class="card-grid">
+                        <div class="card">
+                            <div class="section-header">
+                                <h3>📊 Доходы</h3>
+                                <button class="btn" onclick="showModal('addIncomeModal')">➕ Добавить доход</button>
+                            </div>
+                            <table class="finance-table">
+                                <thead>
+                                    <tr>
+                                        <th>Название</th>
+                                        <th>Сумма</th>
+                                        <th>Дата</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="incomeTableBody">
+                                    <tr>
+                                        <td>Зарплата</td>
+                                        <td style="color: #28a745; font-weight: 600;">+120 000 ₽</td>
+                                        <td>15 янв 2024</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn edit" onclick="editIncome(0)">✏️</button>
+                                                <button class="action-btn delete" onclick="deleteIncome(0)">🗑️</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Фриланс</td>
+                                        <td style="color: #28a745; font-weight: 600;">+22 500 ₽</td>
+                                        <td>10 янв 2024</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn edit" onclick="editIncome(1)">✏️</button>
+                                                <button class="action-btn delete" onclick="deleteIncome(1)">🗑️</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="card">
+                            <div class="section-header">
+                                <h3>📉 Расходы</h3>
+                                <button class="btn" onclick="showModal('addExpenseModal')">➕ Добавить расход</button>
+                            </div>
+                            <table class="finance-table">
+                                <thead>
+                                    <tr>
+                                        <th>Название</th>
+                                        <th>Сумма</th>
+                                        <th>Дата</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expenseTableBody">
+                                    <tr>
+                                        <td>Продукты</td>
+                                        <td style="color: #dc3545; font-weight: 600;">-25 000 ₽</td>
+                                        <td>20 янв 2024</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn edit" onclick="editExpense(0)">✏️</button>
+                                                <button class="action-btn delete" onclick="deleteExpense(0)">🗑️</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Транспорт</td>
+                                        <td style="color: #dc3545; font-weight: 600;">-12 500 ₽</td>
+                                        <td>18 янв 2024</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn edit" onclick="editExpense(1)">✏️</button>
+                                                <button class="action-btn delete" onclick="deleteExpense(1)">🗑️</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Развлечения</td>
+                                        <td style="color: #dc3545; font-weight: 600;">-15 000 ₽</td>
+                                        <td>16 янв 2024</td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn edit" onclick="editExpense(2)">✏️</button>
+                                                <button class="action-btn delete" onclick="deleteExpense(2)">🗑️</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="card">
+                            <h3>📅 Месячные сводки</h3>
+                            <table class="finance-table">
+                                <thead>
+                                    <tr>
+                                        <th>Месяц</th>
+                                        <th>Доходы</th>
+                                        <th>Расходы</th>
+                                        <th>Сбережения</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="monthlyTableBody">
+                                    <tr>
+                                        <td colspan="4" style="text-align: center; padding: 40px; color: #6c757d;">
+                                            <div style="font-size: 24px; margin-bottom: 10px;">📅</div>
+                                            <div style="font-weight: 500; margin-bottom: 5px;">Месячных сводок пока нет</div>
+                                            <div style="font-size: 14px;">Добавьте записи за месяц, чтобы увидеть статистику</div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="card">
+                            <h3>📊 Графики</h3>
+                            <div class="chart-container">
+                                <canvas id="financeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Задачи -->
+            <div id="tasks" class="tab-content">
+                <div class="section-header">
+                    <h2 class="section-title">📋 Управление задачами</h2>
+                    <button class="btn" onclick="showModal('taskModal')">➕ Новая задача</button>
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>🚀 Сегодня</h3>
+                        <div class="task-item">
+                            <div class="task-checkbox" onclick="toggleTask(this)"></div>
+                            <div class="task-content">
+                                <div class="task-title">Подготовить презентацию</div>
+                                <div class="task-meta">До 17:00 • Работа • <span class="priority-badge priority-high">Высокий</span></div>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox checked" onclick="toggleTask(this)"></div>
+                            <div class="task-content">
+                                <div class="task-title">Купить продукты</div>
+                                <div class="task-meta">Личные • <span class="priority-badge priority-medium">Средний</span></div>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox" onclick="toggleTask(this)"></div>
+                            <div class="task-content">
+                                <div class="task-title">Заплатить за интернет</div>
+                                <div class="task-meta">До 23:59 • <span class="priority-badge priority-low">Низкий</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>📅 Эта неделя</h3>
+                        <div class="task-item">
+                            <div class="task-checkbox" onclick="toggleTask(this)"></div>
+                            <div class="task-content">
+                                <div class="task-title">Планирование спринта</div>
+                                <div class="task-meta">Пятница • Работа • <span class="priority-badge priority-high">Высокий</span></div>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox" onclick="toggleTask(this)"></div>
+                            <div class="task-content">
+                                <div class="task-title">Записаться к врачу</div>
+                                <div class="task-meta">Здоровье • <span class="priority-badge priority-medium">Средний</span></div>
+                            </div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-checkbox" onclick="toggleTask(this)"></div>
+                            <div class="task-content">
+                                <div class="task-title">Обновить резюме</div>
+                                <div class="task-meta">Карьера • <span class="priority-badge priority-low">Низкий</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>📊 Статистика</h3>
+                        <div class="dashboard-grid">
+                            <div class="stat-card">
+                                <div class="value">85%</div>
+                                <div class="label">Выполнено</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="value">12</div>
+                                <div class="label">Активных</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="value">23</div>
+                                <div class="label">Завершено</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Привычки -->
+            <div id="habits" class="tab-content">
+                <div class="section-header">
+                    <h2 class="section-title">🎯 Трекер привычек</h2>
+                    <button class="btn" onclick="showModal('habitModal')">➕ Новая привычка</button>
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>🌟 Активные привычки</h3>
+                        <div class="habit-card">
+                            <div class="habit-header">
+                                <div class="habit-title">💪 Утренняя зарядка</div>
+                                <div class="habit-streak">🔥 15 дней</div>
+                            </div>
+                            <div class="habit-progress">
+                                <div class="habit-progress-fill" style="width: 100%"></div>
+                            </div>
+                            <div class="habit-days">
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">П</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">В</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">С</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">Ч</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">П</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">С</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">В</div>
+                            </div>
+                        </div>
+                        <div class="habit-card" style="background: linear-gradient(135deg, #9C27B0 0%, #BA68C8 100%);">
+                            <div class="habit-header">
+                                <div class="habit-title">📚 Чтение 30 минут</div>
+                                <div class="habit-streak">🔥 8 дней</div>
+                            </div>
+                            <div class="habit-progress">
+                                <div class="habit-progress-fill" style="width: 80%"></div>
+                            </div>
+                            <div class="habit-days">
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">П</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">В</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">С</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">Ч</div>
+                                <div class="habit-day" onclick="toggleHabitDay(this)">П</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">С</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">В</div>
+                            </div>
+                        </div>
+                        <div class="habit-card" style="background: linear-gradient(135deg, #FF5722 0%, #FF8A65 100%);">
+                            <div class="habit-header">
+                                <div class="habit-title">🧘 Медитация</div>
+                                <div class="habit-streak">🔥 5 дней</div>
+                            </div>
+                            <div class="habit-progress">
+                                <div class="habit-progress-fill" style="width: 60%"></div>
+                            </div>
+                            <div class="habit-days">
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">П</div>
+                                <div class="habit-day" onclick="toggleHabitDay(this)">В</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">С</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">Ч</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">П</div>
+                                <div class="habit-day" onclick="toggleHabitDay(this)">С</div>
+                                <div class="habit-day completed" onclick="toggleHabitDay(this)">В</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>📈 Аналитика привычек</h3>
+                        <div class="chart-container">
+                            <canvas id="habitsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>🏆 Достижения</h3>
+                        <div class="achievement-card">
+                            <div class="achievement-icon">🏃‍♀️</div>
+                            <div class="achievement-title">Марафонец</div>
+                            <div class="achievement-description">15 дней подряд зарядки</div>
+                        </div>
+                        <div class="achievement-card" style="background: linear-gradient(135deg, #9C27B0 0%, #BA68C8 100%);">
+                            <div class="achievement-icon">📖</div>
+                            <div class="achievement-title">Книжный червь</div>
+                            <div class="achievement-description">Неделя ежедневного чтения</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Проекты -->
+            <div id="projects" class="tab-content">
+                <div class="section-header">
+                    <h2 class="section-title">📁 Управление проектами</h2>
+                    <button class="btn" onclick="showModal('projectModal')">➕ Новый проект</button>
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>🚀 Мобильное приложение</h3>
+                        <div class="habit-progress" style="margin-bottom: 15px;">
+                            <div class="habit-progress-fill" style="width: 65%; background: #2196F3;"></div>
+                        </div>
+                        <p style="margin-bottom: 15px; color: #666;">Разработка планера задач для iOS</p>
+                        <div class="task-meta">
+                            <span class="priority-badge priority-high">Активный</span>
+                            <span style="margin-left: 10px;">Завершение: 15 марта</span>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-secondary" style="margin-right: 10px;">Подробнее</button>
+                            <button class="btn">Задачи</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>📊 Личный блог</h3>
+                        <div class="habit-progress" style="margin-bottom: 15px;">
+                            <div class="habit-progress-fill" style="width: 30%; background: #FF9800;"></div>
+                        </div>
+                        <p style="margin-bottom: 15px; color: #666;">Создание блога о технологиях</p>
+                        <div class="task-meta">
+                            <span class="priority-badge priority-medium">В планах</span>
+                            <span style="margin-left: 10px;">Начало: 1 февраля</span>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-secondary" style="margin-right: 10px;">Подробнее</button>
+                            <button class="btn">Задачи</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>🎓 Изучение Python</h3>
+                        <div class="habit-progress" style="margin-bottom: 15px;">
+                            <div class="habit-progress-fill" style="width: 85%; background: #4CAF50;"></div>
+                        </div>
+                        <p style="margin-bottom: 15px; color: #666;">Освоение Python для анализа данных</p>
+                        <div class="task-meta">
+                            <span class="priority-badge priority-low">Почти готово</span>
+                            <span style="margin-left: 10px;">Завершение: 20 января</span>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button class="btn btn-secondary" style="margin-right: 10px;">Подробнее</button>
+                            <button class="btn">Задачи</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Геймификация -->
+            <div id="gamification" class="tab-content">
+                <div class="section-header">
+                    <h2 class="section-title">🏆 Достижения и награды</h2>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="icon">⭐</div>
+                        <div class="value">2,480</div>
+                        <div class="label">Очков опыта</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">📊</div>
+                        <div class="value">15</div>
+                        <div class="label">Уровень</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">🏅</div>
+                        <div class="value">23</div>
+                        <div class="label">Достижений</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="icon">🔥</div>
+                        <div class="value">47</div>
+                        <div class="label">Серия дней</div>
+                    </div>
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>🏆 Последние достижения</h3>
+                        <div class="achievement-card">
+                            <div class="achievement-icon">🎯</div>
+                            <div class="achievement-title">Мастер целей</div>
+                            <div class="achievement-description">Выполнил 100 задач</div>
+                        </div>
+                        <div class="achievement-card" style="background: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);">
+                            <div class="achievement-icon">💪</div>
+                            <div class="achievement-title">Железная дисциплина</div>
+                            <div class="achievement-description">30 дней подряд привычек</div>
+                        </div>
+                        <div class="achievement-card" style="background: linear-gradient(135deg, #FF9800 0%, #FFB74D 100%);">
+                            <div class="achievement-icon">💰</div>
+                            <div class="achievement-title">Финансовый гений</div>
+                            <div class="achievement-description">Сэкономил 50,000 ₽</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>📈 Прогресс уровня</h3>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <div style="font-size: 64px; margin-bottom: 15px;">🎖️</div>
+                            <div style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">Уровень 15</div>
+                            <div style="color: #666; margin-bottom: 25px;">Продвинутый пользователь</div>
+                        </div>
+                        <div class="habit-progress" style="margin-bottom: 15px;">
+                            <div class="habit-progress-fill" style="width: 68%; background: #FFD700;"></div>
+                        </div>
+                        <div style="text-align: center; color: #666;">
+                            2,480 / 3,000 XP до следующего уровня
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>🎯 Активные челленджи</h3>
+                        <div class="task-item">
+                            <div class="task-content">
+                                <div class="task-title">📚 Читать каждый день</div>
+                                <div class="task-meta">Прогресс: 8/30 дней</div>
+                            </div>
+                            <div class="priority-badge priority-medium">Активный</div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-content">
+                                <div class="task-title">💪 Спорт 3 раза в неделю</div>
+                                <div class="task-meta">Прогресс: 2/3 на этой неделе</div>
+                            </div>
+                            <div class="priority-badge priority-high">Активный</div>
+                        </div>
+                        <div class="task-item">
+                            <div class="task-content">
+                                <div class="task-title">💰 Сэкономить 10,000 ₽</div>
+                                <div class="task-meta">Прогресс: 7,500 ₽</div>
+                            </div>
+                            <div class="priority-badge priority-low">Активный</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальные окна -->
+    <div id="addTransactionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideModal('addTransactionModal')">&times;</span>
+            <h2>Добавить транзакцию</h2>
+            <form id="transactionForm">
+                <div class="form-group">
+                    <label>Тип</label>
+                    <select id="transactionType">
+                        <option value="income">Доход</option>
+                        <option value="expense">Расход</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" id="transactionName" placeholder="Например: Зарплата, Продукты">
+                </div>
+                <div class="form-group">
+                    <label>Сумма</label>
+                    <input type="text" id="transactionAmount" placeholder="Введите сумму" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                    <label>Описание (необязательно)</label>
+                    <textarea id="transactionDescription" placeholder="Описание транзакции"></textarea>
+                </div>
+                <button type="submit" class="btn">Добавить транзакцию</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addIncomeModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideModal('addIncomeModal')">&times;</span>
+            <h2>Добавить доход</h2>
+            <form id="incomeForm">
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" id="incomeName" placeholder="Например: Зарплата, Премия">
+                </div>
+                <div class="form-group">
+                    <label>Сумма</label>
+                    <input type="text" id="incomeAmount" placeholder="Введите сумму" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                    <label>Описание (необязательно)</label>
+                    <textarea id="incomeDescription" placeholder="Описание дохода"></textarea>
+                </div>
+                <button type="submit" class="btn">Добавить доход</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="addExpenseModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideModal('addExpenseModal')">&times;</span>
+            <h2>Добавить расход</h2>
+            <form id="expenseForm">
+                <div class="form-group">
+                    <label>Название</label>
+                    <input type="text" id="expenseName" placeholder="Например: Продукты, Транспорт">
+                </div>
+                <div class="form-group">
+                    <label>Сумма</label>
+                    <input type="text" id="expenseAmount" placeholder="Введите сумму" inputmode="decimal">
+                </div>
+                <div class="form-group">
+                    <label>Описание (необязательно)</label>
+                    <textarea id="expenseDescription" placeholder="Описание расхода"></textarea>
+                </div>
+                <button type="submit" class="btn">Добавить расход</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideModal('taskModal')">&times;</span>
+            <h2>Новая задача</h2>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label>Название задачи</label>
+                    <input type="text" id="taskName" placeholder="Введите название задачи">
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="taskDescription" placeholder="Описание задачи (необязательно)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Приоритет</label>
+                    <select id="taskPriority">
+                        <option value="low">Низкий</option>
+                        <option value="medium">Средний</option>
+                        <option value="high">Высокий</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">Создать задачу</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="habitModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideModal('habitModal')">&times;</span>
+            <h2>Новая привычка</h2>
+            <form id="habitForm">
+                <div class="form-group">
+                    <label>Название привычки</label>
+                    <input type="text" id="habitName" placeholder="Например: Утренняя зарядка">
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="habitDescription" placeholder="Описание привычки"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Цель (дней)</label>
+                    <input type="number" id="habitGoal" placeholder="30" min="1">
+                </div>
+                <button type="submit" class="btn">Создать привычку</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="hideModal('projectModal')">&times;</span>
+            <h2>Новый проект</h2>
+            <form id="projectForm">
+                <div class="form-group">
+                    <label>Название проекта</label>
+                    <input type="text" id="projectName" placeholder="Введите название проекта">
+                </div>
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="projectDescription" placeholder="Описание проекта"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Дата завершения</label>
+                    <input type="date" id="projectDeadline">
+                </div>
+                <button type="submit" class="btn">Создать проект</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Уведомления -->
+    <div id="notification" class="notification">
+        <span id="notificationMessage"></span>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let charts = {};
+        let financeData = {
+            incomes: [],
+            expenses: []
+        };
+
+        // Функция переключения основных табов
+        function showMainTab(tabName) {
+            // Скрываем все табы
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Убираем активный класс у всех кнопок
+            document.querySelectorAll('.main-nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Показываем выбранный таб
+            const targetTab = document.getElementById(tabName);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+            
+            // Активируем кнопку
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            } else {
+                // Fallback: находим кнопку по onclick атрибуту
+                document.querySelectorAll('.main-nav-tab').forEach(tab => {
+                    if (tab.getAttribute('onclick') && tab.getAttribute('onclick').includes(tabName)) {
+                        tab.classList.add('active');
+                    }
+                });
+            }
+            
+            // Инициализация графиков для соответствующего таба
+            setTimeout(() => {
+                if (tabName === 'dashboard') {
+                    initDashboardCharts();
+                } else if (tabName === 'habits') {
+                    initHabitsCharts();
+                } else if (tabName === 'finance') {
+                    initFinanceCharts();
+                }
+            }, 100);
+        }
+
+
+
+        // Инициализация графиков для дашборда
+        function initDashboardCharts() {
+            const canvas = document.getElementById('dashboardFinanceChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            if (charts.dashboard) charts.dashboard.destroy();
+            
+            charts.dashboard = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Доходы', 'Расходы'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#28a745', '#dc3545'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Инициализация графиков для привычек
+        function initHabitsCharts() {
+            const canvas = document.getElementById('habitsChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            if (charts.habits) charts.habits.destroy();
+            
+            charts.habits = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                    datasets: [{
+                        label: 'Зарядка',
+                        data: [1, 1, 1, 1, 1, 1, 1],
+                        borderColor: '#4CAF50',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Чтение',
+                        data: [1, 1, 1, 0, 1, 1, 1],
+                        borderColor: '#9C27B0',
+                        backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'Медитация',
+                        data: [1, 0, 1, 1, 1, 0, 1],
+                        borderColor: '#FF5722',
+                        backgroundColor: 'rgba(255, 87, 34, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1,
+                            ticks: {
+                                callback: function(value) {
+                                    return value ? 'Да' : 'Нет';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Инициализация графиков для финансов
+        function initFinanceCharts() {
+            const canvas = document.getElementById('financeChart');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            if (charts.finance) charts.finance.destroy();
+            
+            charts.finance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'],
+                    datasets: [{
+                        label: 'Доходы',
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: '#28a745',
+                        borderRadius: 4
+                    }, {
+                        label: 'Расходы',
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: '#dc3545',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString('ru-RU') + ' ₽';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Функции для модальных окон
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Функции для задач
+        function toggleTask(checkbox) {
+            checkbox.classList.toggle('checked');
+            updateTasksCount();
+            showNotification('Задача обновлена!', 'success');
+        }
+
+        function updateTasksCount() {
+            const completedCount = document.querySelectorAll('.task-checkbox.checked').length;
+            document.getElementById('completedTasks').textContent = completedCount;
+        }
+
+        // Функции для привычек
+        function toggleHabitDay(day) {
+            day.classList.toggle('completed');
+            showNotification('Привычка обновлена!', 'success');
+        }
+
+        // Функции для финансов
+        function addIncome(name, amount) {
+            financeData.incomes.push({
+                name: name,
+                amount: amount,
+                date: new Date().toISOString().split('T')[0]
+            });
+            updateFinanceDisplay();
+        }
+
+        function addExpense(name, amount) {
+            financeData.expenses.push({
+                name: name,
+                amount: amount,
+                date: new Date().toISOString().split('T')[0]
+            });
+            updateFinanceDisplay();
+        }
+
+        function deleteIncome(index) {
+            if (confirm('Удалить этот доход?')) {
+                financeData.incomes.splice(index, 1);
+                updateFinanceDisplay();
+                showNotification('Доход удален!', 'success');
+            }
+        }
+
+        function deleteExpense(index) {
+            if (confirm('Удалить этот расход?')) {
+                financeData.expenses.splice(index, 1);
+                updateFinanceDisplay();
+                showNotification('Расход удален!', 'success');
+            }
+        }
+
+        function editIncome(index) {
+            const income = financeData.incomes[index];
+            const newName = prompt('Название дохода:', income.name);
+            const newAmount = prompt('Сумма дохода:', income.amount);
+            
+            if (newName !== null && newAmount !== null) {
+                financeData.incomes[index] = {
+                    ...income,
+                    name: newName,
+                    amount: parseFloat(newAmount)
+                };
+                updateFinanceDisplay();
+                showNotification('Доход обновлен!', 'success');
+            }
+        }
+
+        function editExpense(index) {
+            const expense = financeData.expenses[index];
+            const newName = prompt('Название расхода:', expense.name);
+            const newAmount = prompt('Сумма расхода:', expense.amount);
+            
+            if (newName !== null && newAmount !== null) {
+                financeData.expenses[index] = {
+                    ...expense,
+                    name: newName,
+                    amount: parseFloat(newAmount)
+                };
+                updateFinanceDisplay();
+                showNotification('Расход обновлен!', 'success');
+            }
+        }
+
+        function updateFinanceCharts(totalIncome, totalExpense) {
+            // Обновляем дашборд график
+            if (charts.dashboard) {
+                charts.dashboard.data.datasets[0].data = [totalIncome, totalExpense];
+                charts.dashboard.update();
+            }
+            
+            // Обновляем финансовый график
+            if (charts.finance) {
+                // Здесь можно добавить более сложную логику для обновления месячных данных
+                charts.finance.data.datasets[0].data[5] = totalIncome; // Текущий месяц
+                charts.finance.data.datasets[1].data[5] = totalExpense; // Текущий месяц
+                charts.finance.update();
+            }
+        }
+
+        function updateFinanceDisplay() {
+            const totalIncome = financeData.incomes.reduce((sum, item) => sum + item.amount, 0);
+            const totalExpense = financeData.expenses.reduce((sum, item) => sum + item.amount, 0);
+            const totalBalance = totalIncome - totalExpense;
+
+            // Обновляем карточки с цветами
+            const incomeElement = document.getElementById('totalIncome');
+            const expenseElement = document.getElementById('totalExpense');
+            const balanceElement = document.getElementById('totalBalance');
+            const savingsElement = document.getElementById('totalSavings');
+            
+            if (totalIncome > 0) {
+                incomeElement.textContent = `+${totalIncome.toLocaleString('ru-RU')} ₽`;
+                incomeElement.className = 'finance-amount positive';
+            } else {
+                incomeElement.textContent = '0 ₽';
+                incomeElement.className = 'finance-amount';
+            }
+            
+            if (totalExpense > 0) {
+                expenseElement.textContent = `-${totalExpense.toLocaleString('ru-RU')} ₽`;
+                expenseElement.className = 'finance-amount negative';
+            } else {
+                expenseElement.textContent = '0 ₽';
+                expenseElement.className = 'finance-amount';
+            }
+            
+            if (totalBalance !== 0) {
+                balanceElement.textContent = `${totalBalance >= 0 ? '+' : ''}${totalBalance.toLocaleString('ru-RU')} ₽`;
+                balanceElement.className = `finance-amount ${totalBalance >= 0 ? 'positive' : 'negative'}`;
+            } else {
+                balanceElement.textContent = '0 ₽';
+                balanceElement.className = 'finance-amount';
+            }
+            
+            if (totalBalance !== 0) {
+                savingsElement.textContent = `${totalBalance >= 0 ? '+' : ''}${totalBalance.toLocaleString('ru-RU')} ₽`;
+                savingsElement.className = `finance-amount ${totalBalance >= 0 ? 'positive' : 'negative'}`;
+            } else {
+                savingsElement.textContent = '0 ₽';
+                savingsElement.className = 'finance-amount';
+            }
+            
+            // Обновляем currentBalance если есть
+            const currentBalanceElement = document.getElementById('currentBalance');
+            if (currentBalanceElement) {
+                currentBalanceElement.textContent = `${totalBalance.toLocaleString('ru-RU')} ₽`;
+            }
+
+            // Обновляем таблицы
+            updateIncomeTable();
+            updateExpenseTable();
+            
+            // Обновляем графики
+            updateFinanceCharts(totalIncome, totalExpense);
+        }
+
+        function updateIncomeTable() {
+            const tbody = document.getElementById('incomeTableBody');
+            tbody.innerHTML = '';
+            
+            if (financeData.incomes.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="4" style="text-align: center; padding: 40px; color: #6c757d;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">💰</div>
+                        <div style="font-weight: 500; margin-bottom: 5px;">Записей о доходах пока нет</div>
+                        <div style="font-size: 14px;">Добавьте первую запись, чтобы увидеть данные</div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            } else {
+                financeData.incomes.forEach((income, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${income.name}</td>
+                        <td style="color: #28a745; font-weight: 600;">+${income.amount.toLocaleString('ru-RU')} ₽</td>
+                        <td>${formatDate(income.date)}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn edit" onclick="editIncome(${index})">✏️</button>
+                                <button class="action-btn delete" onclick="deleteIncome(${index})">🗑️</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        function updateExpenseTable() {
+            const tbody = document.getElementById('expenseTableBody');
+            tbody.innerHTML = '';
+            
+            if (financeData.expenses.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="4" style="text-align: center; padding: 40px; color: #6c757d;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">💳</div>
+                        <div style="font-weight: 500; margin-bottom: 5px;">Записей о расходах пока нет</div>
+                        <div style="font-size: 14px;">Добавьте первую запись, чтобы увидеть данные</div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            } else {
+                financeData.expenses.forEach((expense, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${expense.name}</td>
+                        <td style="color: #dc3545; font-weight: 600;">-${expense.amount.toLocaleString('ru-RU')} ₽</td>
+                        <td>${formatDate(expense.date)}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn edit" onclick="editExpense(${index})">✏️</button>
+                                <button class="action-btn delete" onclick="deleteExpense(${index})">🗑️</button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        // Функция показа уведомлений
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const messageElement = document.getElementById('notificationMessage');
+            
+            messageElement.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+                 // Функция валидации суммы
+         function validateAndParseAmount(amountString) {
+             if (!amountString || amountString.trim() === '') {
+                 return null;
+             }
+             
+             // Заменяем запятую на точку
+             const normalized = amountString.replace(',', '.');
+             
+             // Проверяем что содержит только цифры и точку
+             if (!/^\d+(\.\d{1,2})?$/.test(normalized)) {
+                 return null;
+             }
+             
+             const amount = parseFloat(normalized);
+             return amount > 0 ? amount : null;
+         }
+
+         // Добавляем валидацию в реальном времени для полей сумм
+         function setupAmountValidation(inputId) {
+             const input = document.getElementById(inputId);
+             if (input) {
+                 input.addEventListener('input', function(e) {
+                     let value = e.target.value;
+                     
+                     // Разрешаем только цифры, точку и запятую
+                     value = value.replace(/[^0-9.,]/g, '');
+                     
+                     // Заменяем запятую на точку
+                     value = value.replace(',', '.');
+                     
+                     // Ограничиваем одной точкой
+                     const parts = value.split('.');
+                     if (parts.length > 2) {
+                         value = parts[0] + '.' + parts.slice(1).join('');
+                     }
+                     
+                     // Ограничиваем двумя знаками после точки
+                     if (parts.length === 2 && parts[1].length > 2) {
+                         value = parts[0] + '.' + parts[1].substring(0, 2);
+                     }
+                     
+                     e.target.value = value;
+                 });
+             }
+         }
+
+         // Обработчики форм
+         document.getElementById('transactionForm').addEventListener('submit', function(e) {
+             e.preventDefault();
+             
+             const type = document.getElementById('transactionType').value;
+             const name = document.getElementById('transactionName').value;
+             const amount = validateAndParseAmount(document.getElementById('transactionAmount').value);
+             
+             if (name && amount !== null) {
+                 if (type === 'income') {
+                     addIncome(name, amount);
+                 } else {
+                     addExpense(name, amount);
+                 }
+                 hideModal('addTransactionModal');
+                 this.reset();
+                 showNotification('Транзакция добавлена!', 'success');
+             } else {
+                 showNotification('Введите корректные данные!', 'error');
+             }
+         });
+
+                 document.getElementById('incomeForm').addEventListener('submit', function(e) {
+             e.preventDefault();
+             
+             const name = document.getElementById('incomeName').value;
+             const amount = validateAndParseAmount(document.getElementById('incomeAmount').value);
+             
+             if (name && amount !== null) {
+                 addIncome(name, amount);
+                 hideModal('addIncomeModal');
+                 this.reset();
+                 showNotification('Доход добавлен!', 'success');
+             } else {
+                 showNotification('Введите корректные данные!', 'error');
+             }
+         });
+
+         document.getElementById('expenseForm').addEventListener('submit', function(e) {
+             e.preventDefault();
+             
+             const name = document.getElementById('expenseName').value;
+             const amount = validateAndParseAmount(document.getElementById('expenseAmount').value);
+             
+             if (name && amount !== null) {
+                 addExpense(name, amount);
+                 hideModal('addExpenseModal');
+                 this.reset();
+                 showNotification('Расход добавлен!', 'success');
+             } else {
+                 showNotification('Введите корректные данные!', 'error');
+             }
+         });
+
+        document.getElementById('taskForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('taskName').value;
+            
+            if (name) {
+                hideModal('taskModal');
+                this.reset();
+                showNotification('Задача создана!', 'success');
+            } else {
+                showNotification('Введите название задачи!', 'error');
+            }
+        });
+
+        document.getElementById('habitForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('habitName').value;
+            
+            if (name) {
+                hideModal('habitModal');
+                this.reset();
+                showNotification('Привычка создана!', 'success');
+            } else {
+                showNotification('Введите название привычки!', 'error');
+            }
+        });
+
+        document.getElementById('projectForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('projectName').value;
+            
+            if (name) {
+                hideModal('projectModal');
+                this.reset();
+                showNotification('Проект создан!', 'success');
+            } else {
+                showNotification('Введите название проекта!', 'error');
+            }
+        });
+
+        // Закрытие модальных окон при клике вне их
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+                 // Инициализация при загрузке страницы
+         document.addEventListener('DOMContentLoaded', function() {
+             // Инициализация дашборда
+             setTimeout(() => {
+                 initDashboardCharts();
+             }, 100);
+             
+             // Обновление финансовых данных
+             updateFinanceDisplay();
+             
+             // Обновление счетчика задач
+             updateTasksCount();
+             
+             // Инициализация валидации полей сумм
+             setupAmountValidation('transactionAmount');
+             setupAmountValidation('incomeAmount');
+             setupAmountValidation('expenseAmount');
+         });
+    </script>
+</body>
+</html> 
