@@ -111,6 +111,9 @@ final class FinanceService: FinanceServiceProtocol {
         
         try await transactionRepository.saveExpenseEntry(entry)
         
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateCurrentMonth()
+        
         #if DEBUG
         print("Added expense entry: \(name) - \(amount)")
         #endif
@@ -129,6 +132,9 @@ final class FinanceService: FinanceServiceProtocol {
         
         try await transactionRepository.updateExpenseEntry(entry)
         
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateCurrentMonth()
+        
         #if DEBUG
         print("Updated expense entry: \(entry.name) - \(entry.amount)")
         #endif
@@ -136,6 +142,9 @@ final class FinanceService: FinanceServiceProtocol {
     
     func deleteExpenseEntry(_ entry: ExpenseEntry) async throws {
         try await transactionRepository.deleteExpenseEntry(entry)
+        
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateCurrentMonth()
         
         #if DEBUG
         print("Deleted expense entry: \(entry.name)")
@@ -161,6 +170,9 @@ final class FinanceService: FinanceServiceProtocol {
         
         try await transactionRepository.saveIncomeEntry(entry)
         
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateCurrentMonth()
+        
         #if DEBUG
         print("Added income entry: \(name) - \(amount)")
         #endif
@@ -179,6 +191,9 @@ final class FinanceService: FinanceServiceProtocol {
         
         try await transactionRepository.updateIncomeEntry(entry)
         
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateCurrentMonth()
+        
         #if DEBUG
         print("Updated income entry: \(entry.name) - \(entry.amount)")
         #endif
@@ -186,6 +201,9 @@ final class FinanceService: FinanceServiceProtocol {
     
     func deleteIncomeEntry(_ entry: IncomeEntry) async throws {
         try await transactionRepository.deleteIncomeEntry(entry)
+        
+        // Автоматически обновляем месячную сводку
+        _ = try await recalculateCurrentMonth()
         
         #if DEBUG
         print("Deleted income entry: \(entry.name)")
@@ -203,7 +221,36 @@ final class FinanceService: FinanceServiceProtocol {
     }
     
     func getMonthlySummaries() async throws -> [MonthlySummary] {
-        return try await transactionRepository.fetchMonthlySummaries()
+        let existingSummaries = try await transactionRepository.fetchMonthlySummaries()
+        
+        // Создаем сводки для всех месяцев от начала года до следующего года
+        let calendar = Calendar.current
+        let now = Date()
+        let currentYear = calendar.component(.year, from: now)
+        
+        var allSummaries: [MonthlySummary] = []
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM"
+        
+        // Создаем сводки для текущего и следующего года (24 месяца)
+        for year in [currentYear, currentYear + 1] {
+            for month in 1...12 {
+                let monthString = String(format: "%04d-%02d", year, month)
+                
+                // Проверяем есть ли уже сводка для этого месяца
+                if let existingSummary = existingSummaries.first(where: { $0.month == monthString }) {
+                    allSummaries.append(existingSummary)
+                } else {
+                    // Создаем новую сводку с нулевыми значениями
+                    let newSummary = MonthlySummary(month: monthString)
+                    try await transactionRepository.saveMonthlySummary(newSummary)
+                    allSummaries.append(newSummary)
+                }
+            }
+        }
+        
+        // Сортируем по дате (новые сначала)
+        return allSummaries.sorted { $0.month > $1.month }
     }
     
     func getCurrentMonthSummary() async throws -> MonthlySummary {

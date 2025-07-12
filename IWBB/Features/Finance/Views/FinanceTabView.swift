@@ -49,21 +49,21 @@ struct FinanceTabView: View {
                         }
                         #endif
                         
-                        // Кнопка добавления
-                        Menu {
-                            Button("Добавить расход", systemImage: "minus.circle") {
-                                viewModel.clearExpenseForm()
-                                viewModel.showAddExpenseSheet = true
-                            }
-                            
-                            Button("Добавить доход", systemImage: "plus.circle") {
+                        // Кнопки добавления
+                        HStack(spacing: 8) {
+                            Button("Доход", systemImage: "plus.circle") {
                                 viewModel.clearIncomeForm()
                                 viewModel.showAddIncomeSheet = true
                             }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title2)
-                                .foregroundColor(.primary)
+                            .buttonStyle(.bordered)
+                            .foregroundColor(.green)
+                            
+                            Button("Расход", systemImage: "minus.circle") {
+                                viewModel.clearExpenseForm()
+                                viewModel.showAddExpenseSheet = true
+                            }
+                            .buttonStyle(.bordered)
+                            .foregroundColor(.red)
                         }
                     }
                 }

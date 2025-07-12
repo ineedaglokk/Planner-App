@@ -876,8 +876,11 @@
                 <div class="section-header">
                     <h2 class="section-title">💰 Финансовый планер</h2>
                     <div>
-                        <button class="btn" onclick="showModal('addTransactionModal')">
-                            ➕ Добавить транзакцию
+                        <button class="btn btn-success" onclick="showModal('addIncomeModal')" style="margin-right: 8px;">
+                            ➕ Добавить доход
+                        </button>
+                        <button class="btn btn-danger" onclick="showModal('addExpenseModal')">
+                            ➕ Добавить расход
                         </button>
                     </div>
                 </div>
@@ -1349,34 +1352,6 @@
     </div>
 
     <!-- Модальные окна -->
-    <div id="addTransactionModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="hideModal('addTransactionModal')">&times;</span>
-            <h2>Добавить транзакцию</h2>
-            <form id="transactionForm">
-                <div class="form-group">
-                    <label>Тип</label>
-                    <select id="transactionType">
-                        <option value="income">Доход</option>
-                        <option value="expense">Расход</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Название</label>
-                    <input type="text" id="transactionName" placeholder="Например: Зарплата, Продукты">
-                </div>
-                <div class="form-group">
-                    <label>Сумма</label>
-                    <input type="text" id="transactionAmount" placeholder="Введите сумму" inputmode="decimal">
-                </div>
-                <div class="form-group">
-                    <label>Описание (необязательно)</label>
-                    <textarea id="transactionDescription" placeholder="Описание транзакции"></textarea>
-                </div>
-                <button type="submit" class="btn">Добавить транзакцию</button>
-            </form>
-        </div>
-    </div>
 
     <div id="addIncomeModal" class="modal">
         <div class="modal-content">
@@ -1504,6 +1479,37 @@
             incomes: [],
             expenses: []
         };
+        
+        // Создаем месячные сводки для всех месяцев
+        function createMonthlySummaries() {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const summaries = [];
+            
+            // Создаем сводки для текущего и следующего года
+            for (let year of [currentYear, currentYear + 1]) {
+                for (let month = 1; month <= 12; month++) {
+                    summaries.push({
+                        year: year,
+                        month: month,
+                        monthString: `${year}-${month.toString().padStart(2, '0')}`,
+                        displayName: getMonthDisplayName(year, month),
+                        totalIncome: 0,
+                        totalExpense: 0,
+                        totalSavings: 0
+                    });
+                }
+            }
+            
+            return summaries.sort((a, b) => b.monthString.localeCompare(a.monthString));
+        }
+        
+        function getMonthDisplayName(year, month) {
+            const date = new Date(year, month - 1, 1);
+            return date.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
+        }
+        
+        let monthlySummaries = createMonthlySummaries();
 
         // Функция переключения основных табов
         function showMainTab(tabName) {
@@ -1784,6 +1790,84 @@
             }
         }
 
+        function updateMonthlySummaries() {
+            // Получаем текущий месяц
+            const now = new Date();
+            const currentMonthString = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+            
+            // Сбрасываем все сводки
+            monthlySummaries.forEach(summary => {
+                summary.totalIncome = 0;
+                summary.totalExpense = 0;
+                summary.totalSavings = 0;
+            });
+            
+            // Группируем доходы и расходы по месяцам
+            financeData.incomes.forEach(income => {
+                const incomeDate = new Date(income.date);
+                const incomeMonthString = `${incomeDate.getFullYear()}-${(incomeDate.getMonth() + 1).toString().padStart(2, '0')}`;
+                
+                const summary = monthlySummaries.find(s => s.monthString === incomeMonthString);
+                if (summary) {
+                    summary.totalIncome += income.amount;
+                    summary.totalSavings = summary.totalIncome - summary.totalExpense;
+                }
+            });
+            
+            financeData.expenses.forEach(expense => {
+                const expenseDate = new Date(expense.date);
+                const expenseMonthString = `${expenseDate.getFullYear()}-${(expenseDate.getMonth() + 1).toString().padStart(2, '0')}`;
+                
+                const summary = monthlySummaries.find(s => s.monthString === expenseMonthString);
+                if (summary) {
+                    summary.totalExpense += expense.amount;
+                    summary.totalSavings = summary.totalIncome - summary.totalExpense;
+                }
+            });
+            
+            // Обновляем отображение
+            updateMonthlyTable();
+        }
+        
+        function updateMonthlyTable() {
+            const tbody = document.getElementById('monthlyTableBody');
+            tbody.innerHTML = '';
+            
+            // Показываем только месяцы с данными или последние 6 месяцев
+            const monthsToShow = monthlySummaries.filter(s => 
+                s.totalIncome > 0 || s.totalExpense > 0 || monthlySummaries.indexOf(s) < 6
+            ).slice(0, 12);
+            
+            if (monthsToShow.length === 0 || monthsToShow.every(s => s.totalIncome === 0 && s.totalExpense === 0)) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td colspan="4" style="text-align: center; padding: 40px; color: #6c757d;">
+                        <div style="font-size: 24px; margin-bottom: 10px;">📅</div>
+                        <div style="font-weight: 500; margin-bottom: 5px;">Месячных сводок пока нет</div>
+                        <div style="font-size: 14px;">Добавьте записи за месяц, чтобы увидеть статистику</div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            } else {
+                monthsToShow.forEach(summary => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${summary.displayName}</td>
+                        <td style="color: ${summary.totalIncome > 0 ? '#28a745' : '#6c757d'}; font-weight: 600;">
+                            ${summary.totalIncome > 0 ? '+' : ''}${summary.totalIncome.toLocaleString('ru-RU')} ₽
+                        </td>
+                        <td style="color: ${summary.totalExpense > 0 ? '#dc3545' : '#6c757d'}; font-weight: 600;">
+                            ${summary.totalExpense > 0 ? '-' : ''}${summary.totalExpense.toLocaleString('ru-RU')} ₽
+                        </td>
+                        <td style="color: ${summary.totalSavings >= 0 ? '#2196F3' : '#dc3545'}; font-weight: 600;">
+                            ${summary.totalSavings >= 0 ? '+' : ''}${summary.totalSavings.toLocaleString('ru-RU')} ₽
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+
         function updateFinanceCharts(totalIncome, totalExpense) {
             // Обновляем дашборд график
             if (charts.dashboard) {
@@ -1852,6 +1936,9 @@
             // Обновляем таблицы
             updateIncomeTable();
             updateExpenseTable();
+            
+            // Обновляем месячные сводки
+            updateMonthlySummaries();
             
             // Обновляем графики
             updateFinanceCharts(totalIncome, totalExpense);
@@ -1993,26 +2080,6 @@
          }
 
          // Обработчики форм
-         document.getElementById('transactionForm').addEventListener('submit', function(e) {
-             e.preventDefault();
-             
-             const type = document.getElementById('transactionType').value;
-             const name = document.getElementById('transactionName').value;
-             const amount = validateAndParseAmount(document.getElementById('transactionAmount').value);
-             
-             if (name && amount !== null) {
-                 if (type === 'income') {
-                     addIncome(name, amount);
-                 } else {
-                     addExpense(name, amount);
-                 }
-                 hideModal('addTransactionModal');
-                 this.reset();
-                 showNotification('Транзакция добавлена!', 'success');
-             } else {
-                 showNotification('Введите корректные данные!', 'error');
-             }
-         });
 
                  document.getElementById('incomeForm').addEventListener('submit', function(e) {
              e.preventDefault();
@@ -2105,11 +2172,13 @@
              // Обновление финансовых данных
              updateFinanceDisplay();
              
+             // Инициализация месячных сводок
+             updateMonthlyTable();
+             
              // Обновление счетчика задач
              updateTasksCount();
              
              // Инициализация валидации полей сумм
-             setupAmountValidation('transactionAmount');
              setupAmountValidation('incomeAmount');
              setupAmountValidation('expenseAmount');
          });
